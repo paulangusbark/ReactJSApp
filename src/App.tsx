@@ -26,7 +26,7 @@ import './index.css'
  */
 
 // --- Types ---
-export type Network = "mainnet" | "sepolia";
+export type Network = "Ethereum" | "Base";
 export type Address = `0x${string}`;
 export interface Contact { id: string; name: string; address: Address; favourite?: boolean; note?: string }
 export interface TxStatus { phase: "idle" | "preparing" | "sponsored" | "simulated" | "submitted" | "included" | "finalized" | "failed"; hash?: string; userOpHash?: string; message?: string }
@@ -82,19 +82,20 @@ const PaymasterAPI = {
 function hexlify(n: number | bigint) { return `0x${BigInt(n).toString(16)}` as const }
 function emptyHex(): `0x${string}` { return "0x" as const }
 
-// Compose gas fees: (priority << 128) | maxFee
-function packGasFees(priorityGwei = 2n, maxFeeGwei = 30n): `0x${string}` {
-  const GWEI = 1_000_000_000n;
-  const pr = priorityGwei * GWEI;
-  const mx = maxFeeGwei * GWEI;
+// Compose gas fees: (priority << 128) | maxFee   
+// fees are managed as MWei since fees are usually less than one GWei
+function packGasFees(priorityMwei = 2n, maxFeeMwei = 30n): `0x${string}` {
+  const MWEI = 1_000_000n;
+  const pr = priorityMwei * MWEI;
+  const mx = maxFeeMwei * MWEI;
   const packed = (pr << 128n) | mx;
   return `0x${packed.toString(16)}`;
 }
 
-function defaultAccountGasLimits(): `0x${string}` {
+function defaultAccountGasLimits(accountGasLimit = 300_000n, callGasLimit = 1_000_000n): `0x${string}` {
   // accountGasLimits: (verificationGasLimit << 128) | callGasLimit
-  const v = 300_000n; // placeholder
-  const c = 1_000_000n; // placeholder
+  const v = accountGasLimit; 
+  const c = callGasLimit; 
   const packed = (v << 128n) | c;
   return `0x${packed.toString(16)}`;
 }
@@ -117,20 +118,20 @@ export const useTx = create<TxStore>((set, get) => ({
     // 1) Build callData (ERC-4337 execute pattern / account-specific). Placeholder: simple transfer via account's execute.
     // Replace SELECTOR/ABI with your account's method (e.g., execute(address,uint256,bytes)).
     const EXECUTE_SELECTOR = "0xb61d27f6" as const; // execute(address dest, uint256 value, bytes data)
-    const valueWei = BigInt(Math.floor(Number(amountEth || "0") * 1e18));
+    const valueWei = BigInt(Math.floor(Number(amountEth || "0") * 1e18)); // will need to replace 1e18 with token decimals if token transfer
     const encoded = abiEncodeExecute(to, valueWei, data);
 
     const userOpBase: Omit<PackedUserOperation, "paymasterAndData" | "signature"> = {
       sender,
-      nonce: hexlify(0),
+      nonce: hexlify(0), // need to replace with a get nonce function from entry point
       initCode: emptyHex(),
       callData: (EXECUTE_SELECTOR + encoded.slice(2)) as `0x${string}`,
-      accountGasLimits: defaultAccountGasLimits(),
-      preVerificationGas: hexlify(50_000),
-      gasFees: packGasFees(),
+      accountGasLimits: defaultAccountGasLimits(), // will come from bundler api?  or can be internally stored
+      preVerificationGas: hexlify(50_000), // will come from bundler api?
+      gasFees: packGasFees(), // will come from rpc url
     } as any;
 
-    // 2) Get paymaster sponsorship
+    // 2) Get paymaster sponsorship  (maybe replace this with fetching nonce)
     set({ status: { phase: "preparing", message: "Requesting sponsorship" } });
     let paymasterAndData: `0x${string}` = "0x";
     try {
@@ -254,13 +255,13 @@ function BottomNav() {
   );
 }
 
-function NetworkPill() {
+function NetworkPill() {  // either delete to switch to show network name
   return (
     <Badge variant="secondary" className="rounded-full">Sepolia</Badge>
   );
 }
 
-function WalletSwitcher() {
+function WalletSwitcher() { // may delete this
   return (
     <Button size="sm" variant="outline">QA#1</Button>
   );
@@ -353,7 +354,7 @@ export function Login() {
   );
 }
 
-export function Dashboard() {
+export function Dashboard() { // may need to add an import token function here
   const { startFlow } = useTx();
   const navigate = useNavigate();
   return (
@@ -389,7 +390,7 @@ function ActivityRow({ status, hash }: { status: "success" | "pending" | "failed
   );
 }
 
-export function Transfer() {
+export function Transfer() { // might rename as send
   const [to, setTo] = React.useState("");
   const [amount, setAmount] = React.useState("");
   const [memo, setMemo] = React.useState("");
@@ -398,7 +399,7 @@ export function Transfer() {
 
   async function onReview() {
     if (!to || !amount) { toast("Enter recipient and amount"); return }
-    // ENS resolution can be integrated here if needed
+    // ENS resolution can be integrated here if needed, also need to fetch sender address from wallet
     await startFlow({ sender: "0x0000000000000000000000000000000000000001" as Address, to: to as Address, amountEth: amount, entryPoint: "0x0000000000000000000000000000000000000000" as Address, chainId: 11155111 });
     navigate("/dashboard");
   }
@@ -410,7 +411,7 @@ export function Transfer() {
         <CardContent className="space-y-3">
           <div>
             <Label>From</Label>
-            <Input disabled value="QuantumAccount #1" />
+            <Input disabled value="QuantumAccount #1" /> // replace with connected wallet
           </div>
           <div>
             <Label>To (address or ENS)</Label>
@@ -423,20 +424,20 @@ export function Transfer() {
             </div>
             <div>
               <Label>Asset</Label>
-              <Input value="ETH" readOnly />
+              <Input value="ETH" readOnly /> // could be a dropdown for tokens
             </div>
           </div>
           <div>
             <Label>Memo (optional)</Label>
-            <Textarea value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="Payment reference" />
+            <Textarea value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="Payment reference" /> // might delete or repurpose for ECP
           </div>
           <div className="flex items-center justify-between text-sm text-neutral-600">
-            <div>Fee: ~0.001 Ξ</div>
-            <div>Paymaster: <Badge>Auto</Badge></div>
+            <div>Fee: ~0.001 Ξ</div> // need to replace with rpc url query and needs to be an input field
+            <div>Paymaster: <Badge>Auto</Badge></div> // dropdown of registered paymasters
           </div>
           <div className="flex gap-2 pt-2">
             <Button onClick={onReview}>Review & Send</Button>
-            <Button variant="outline">Advanced</Button>
+            <Button variant="outline">Advanced</Button>  // no idea what this will do lol but probably where nonce is set to admin or large gas value
           </div>
         </CardContent>
       </Card>
@@ -444,9 +445,9 @@ export function Transfer() {
   );
 }
 
-export function Contacts() {
+export function Contacts() { // either add a type (wallet/contract) or remove favourite functionality (since favourites is for contracts with ABIs)
   const [q, setQ] = React.useState("");
-  const [items] = React.useState<Contact[]>([
+  const [items] = React.useState<Contact[]>([ // need to store in localstorage or indexeddb
     { id: "1", name: "Alice.eth", address: "0x1111111111111111111111111111111111111111" as Address, favourite: true },
     { id: "2", name: "Bob", address: "0x2222222222222222222222222222222222222222" as Address },
   ]);
@@ -456,7 +457,7 @@ export function Contacts() {
     <div className="space-y-4">
       <div className="flex gap-2">
         <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, address, or ENS" />
-        <Button onClick={() => navigate("/contacts/add")}>Add</Button>
+        <Button onClick={() => navigate("/contacts/add")}>Add</Button> // this isn't a search, wtf but check if above input is automatic
       </div>
       <Card>
         <CardContent className="divide-y">
@@ -475,14 +476,14 @@ function ContactRow({ c }: { c: Contact }) {
   const navigate = useNavigate();
   return (
     <div className="flex items-center justify-between py-3 text-sm">
-      <div>
+      <div>f
         <div className="font-medium">{c.name}</div>
         <div className="font-mono text-xs text-neutral-500 truncate max-w-[60vw] lg:max-w-[40ch]">{c.address}</div>
       </div>
       <div className="flex items-center gap-2">
         <Button size="sm" variant="outline" onClick={() => navigate(`/contacts/view/${c.id}`)}>View</Button>
         <Button size="icon" variant="ghost" onClick={() => setFav(v => !v)}>{fav ? <Star className="h-4 w-4" /> : <StarOff className="h-4 w-4" />}</Button>
-        <Button size="sm" onClick={() => startFlow({ sender: "0x0000000000000000000000000000000000000001" as Address, to: c.address, amountEth: "0.001", entryPoint: "0x0000000000000000000000000000000000000000" as Address, chainId: 11155111 })}>Send</Button>
+        <Button size="sm" onClick={() => startFlow({ sender: "0x0000000000000000000000000000000000000001" as Address, to: c.address, amountEth: "0.001", entryPoint: "0x0000000000000000000000000000000000000000" as Address, chainId: 11155111 })}>Send</Button> // change this to go to transfer screen with prefilled address
       </div>
     </div>
   );
@@ -500,7 +501,7 @@ export function AddContact() {
         <CardHeader><CardTitle>Add Contact</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           <div>
-            <Label>Name / ENS</Label>
+            <Label>Name / ENS</Label> // nope, ENS not here
             <div className="flex gap-2">
               <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="alice.eth or alias" />
               <Button variant="outline">Resolve</Button>
@@ -508,11 +509,11 @@ export function AddContact() {
           </div>
           <div>
             <Label>Address</Label>
-            <Input value={addr} onChange={(e) => setAddr(e.target.value)} placeholder="0x…" />
+            <Input value={addr} onChange={(e) => setAddr(e.target.value)} placeholder="0x…" /> // ENS resolution can be added here
           </div>
           <div>
             <Label>Note</Label>
-            <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Tag or memo" />
+            <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Tag or memo" /> // may add ABI here
           </div>
           <div className="flex gap-2 pt-2">
             <Button>Save</Button>
@@ -524,7 +525,7 @@ export function AddContact() {
   );
 }
 
-export function Favourites() {
+export function Favourites() {  // this is just useless with this hardcoding
   const navigate = useNavigate();
   return (
     <div className="space-y-4">
@@ -559,7 +560,7 @@ export function Wallets() {
               <TabsTrigger value="import">Import</TabsTrigger>
               <TabsTrigger value="watch">Watch-only</TabsTrigger>
             </TabsList>
-            <TabsContent value="add" className="space-y-3">
+            <TabsContent value="add" className="space-y-3"> // need to replace with real create wallet flow and remove initcode blurb
               <Button>Create QuantumAccount</Button>
               <div className="text-xs text-neutral-500">Deploy via EntryPoint initCode. Paymaster policy optional.</div>
             </TabsContent>
