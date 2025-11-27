@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Check, Clock, Loader2, Star, StarOff } from "lucide-react";
 import { create } from "zustand";
 import './index.css'
+import { get } from "http";
 
 /**
  * QuantumAccount React Skeleton v2 — wired to Bundler/Paymaster APIs
@@ -43,15 +44,22 @@ export interface PackedUserOperation {
   signature: `0x${string}`;
 }
 
-export interface SponsorRequest { userOp: Omit<PackedUserOperation, "paymasterAndData" | "signature">; entryPoint: Address; chainId: number }
-export interface SponsorResponse { paymasterAndData: `0x${string}` }
-export interface SimResult { success: boolean; reason?: string; preVerificationGas?: string; verificationGasLimit?: string; callGasLimit?: string }
-export interface SendUserOpResponse { userOpHash: `0x${string}` }
-export interface UserOpReceipt { userOpHash: `0x${string}`; receipt?: { transactionHash: `0x${string}`; status: string }; included?: boolean; finalized?: boolean }
+export interface SubmitRequest { userOp: Omit<PackedUserOperation, "signature">; domain: string }
+export interface SubmitResponse { success: boolean; signed_tx: `0x${string}`; result: string }
+export interface UpdatePublicKey { sender: `0x${string}`; domain: string; oldKey: `0x${string}`; newKey: `0x${string}`; signature: `0x${string}` }
+export interface GenericResponse { success: boolean; result: string }
+export interface TxHashRequest { sender: `0x${string}`; userOpHash: `0x${string}` }
+export interface TxReceipt { success: boolean; txHash: `0x${string}` }
+export interface DomainRow { name: string }
+export interface GetAllDomainsResponse { success: boolean; data: DomainRow[] }
+export interface DomainDetailsResponse { success: boolean; data: { name: string; isTest: number; entryPoint: `0x${string}`; falcon: `0x${string}`; chainId: number; rpcUrl: string; created_at: string; updated_at: string } }
+export interface PaymasterRequest { paymaster: `0x${string}`; domain: string; sender: `0x${string}`; flag: number; signature: `0x${string}` }
+export interface CreateFreeAccountRequest { sender: `0x${string}`; domain: string; publicKey: `0x${string}`; salt: `0x${string}`; signature: `0x${string}` }
+
 
 // --- HTTP util ---
-const BUNDLER = import.meta.env.VITE_BUNDLER_URL as string;
-const PAYMASTER = import.meta.env.VITE_PAYMASTER_URL as string;
+const BUNDLER = `http://localhost:8080` as string;
+const PAYMASTER = `http://localhost:8081` as string;
 
 async function j<T>(url: string, init?: RequestInit): Promise<T> {
   const r = await fetch(url, { headers: { "Content-Type": "application/json" }, ...init });
@@ -61,20 +69,32 @@ async function j<T>(url: string, init?: RequestInit): Promise<T> {
 
 // --- API clients (adjust paths to your servers) ---
 const BundlerAPI = {
-  async simulate(userOp: PackedUserOperation, entryPoint: Address): Promise<SimResult> {
-    return j<SimResult>(`${BUNDLER}/simulate`, { method: "POST", body: JSON.stringify({ userOp, entryPoint }) });
+  async submit(userOp: PackedUserOperation, domain: string): Promise<SubmitResponse> {
+    return j<SubmitResponse>(`${BUNDLER}/submit`, { method: "POST", body: JSON.stringify({ userOp, domain }) });
   },
-  async sendUserOp(userOp: PackedUserOperation, entryPoint: Address): Promise<SendUserOpResponse> {
-    return j<SendUserOpResponse>(`${BUNDLER}/sendUserOp`, { method: "POST", body: JSON.stringify({ userOp, entryPoint }) });
+  async updatePublicKey(sender: Address, domain: string, oldKey: string, newKey: string, signature: string): Promise<GenericResponse> {
+    return j<GenericResponse>(`${BUNDLER}/updatePublicKey`, { method: "POST", body: JSON.stringify({ sender, domain, oldKey, newKey, signature }) });
   },
-  async getUserOpReceipt(userOpHash: string): Promise<UserOpReceipt> {
-    return j<UserOpReceipt>(`${BUNDLER}/getUserOpReceipt?userOpHash=${userOpHash}`);
+  async getAllDomains(): Promise<GetAllDomainsResponse> {
+    return j<GetAllDomainsResponse>(`${BUNDLER}/domain`);
+  },
+  async getDomainDetails(domain: string): Promise<DomainDetailsResponse> {
+    return j<DomainDetailsResponse>(`${BUNDLER}/domain/${domain}`);
+  },
+  async getTxReceipt(sender: Address, userOpHash: `0x${string}`): Promise<TxReceipt> {
+    return j<TxReceipt>(`${BUNDLER}/transaction`, { method: "POST", body: JSON.stringify({ sender, userOpHash }) });
+  },
+  async addPaymaster(paymaster: Address, domain: string, sender: Address, flag: number, signature: `0x${string}`): Promise<GenericResponse> {
+    return j<GenericResponse>(`${BUNDLER}/paymaster/add`, { method: "POST", body: JSON.stringify({ paymaster, domain, sender, flag, signature }) });
+  },
+  async updatePaymaster(paymaster: Address, domain: string, sender: Address, flag: number, signature: `0x${string}`): Promise<GenericResponse> {
+    return j<GenericResponse>(`${BUNDLER}/paymaster/update`, { method: "POST", body: JSON.stringify({ paymaster, domain, sender, flag, signature }) });
   },
 };
 
 const PaymasterAPI = {
-  async sponsor(req: SponsorRequest): Promise<SponsorResponse> {
-    return j<SponsorResponse>(`${PAYMASTER}/paymaster/sponsor`, { method: "POST", body: JSON.stringify(req) });
+  async createNewAccount(sender: Address, domain: string, publicKey: string, salt: string, signature: string): Promise<GenericResponse> {
+    return j<GenericResponse>(`${PAYMASTER}/paymaster/sponsor`, { method: "POST", body: JSON.stringify({ sender, domain, publicKey, salt, signature }) });
   },
 };
 
@@ -104,7 +124,7 @@ function defaultAccountGasLimits(accountGasLimit = 300_000n, callGasLimit = 1_00
 interface TxStore {
   open: boolean;
   status: TxStatus;
-  startFlow: (input: { sender: Address; to: Address; amountEth: string; data?: `0x${string}`; entryPoint: Address; chainId: number }) => Promise<void>;
+  startFlow: (input: { sender: Address; to: Address; amountEth: string; data?: `0x${string}`; paymaster: Address; domain: string }) => Promise<void>;
   close: () => void;
 }
 
@@ -112,7 +132,7 @@ export const useTx = create<TxStore>((set, get) => ({
   open: false,
   status: { phase: "idle" },
   close: () => set({ open: false, status: { phase: "idle" } }),
-  startFlow: async ({ sender, to, amountEth, data = "0x", entryPoint, chainId }) => {
+  startFlow: async ({ sender, to, amountEth, data = "0x", paymaster, domain }) => {
     set({ open: true, status: { phase: "preparing", message: "Building UserOp" } });
 
     // 1) Build callData (ERC-4337 execute pattern / account-specific). Placeholder: simple transfer via account's execute.
@@ -121,7 +141,7 @@ export const useTx = create<TxStore>((set, get) => ({
     const valueWei = BigInt(Math.floor(Number(amountEth || "0") * 1e18)); // will need to replace 1e18 with token decimals if token transfer
     const encoded = abiEncodeExecute(to, valueWei, data);
 
-    const userOpBase: Omit<PackedUserOperation, "paymasterAndData" | "signature"> = {
+    const userOpBase: Omit<PackedUserOperation,  "signature"> = {
       sender,
       nonce: hexlify(0), // need to replace with a get nonce function from entry point
       initCode: emptyHex(),
@@ -129,47 +149,32 @@ export const useTx = create<TxStore>((set, get) => ({
       accountGasLimits: defaultAccountGasLimits(), // will come from bundler api?  or can be internally stored
       preVerificationGas: hexlify(50_000), // will come from bundler api?
       gasFees: packGasFees(), // will come from rpc url
+      paymasterAndData: paymaster as `0x${string}`,
     } as any;
 
-    // 2) Get paymaster sponsorship  (maybe replace this with fetching nonce)
-    set({ status: { phase: "preparing", message: "Requesting sponsorship" } });
-    let paymasterAndData: `0x${string}` = "0x";
-    try {
-      const sponsor = await PaymasterAPI.sponsor({ userOp: userOpBase, entryPoint, chainId });
-      paymasterAndData = sponsor.paymasterAndData;
-      set({ status: { phase: "sponsored", message: "Sponsored by paymaster" } });
-    } catch (e: any) {
-      set({ status: { phase: "preparing", message: `No sponsorship (${e.message})` } });
-    }
-
     // 3) Sign userOp (placeholder; integrate Falcon-1024 or EOA for demo)
+    const userOpHash: `0x${string}` = "0xdeadbeef"; // TODO: replace with real userOpHash calculation
     const signature: `0x${string}` = "0x01"; // TODO: replace with real signature
 
-    const userOp: PackedUserOperation = { ...userOpBase, paymasterAndData, signature } as PackedUserOperation;
+    const userOp: PackedUserOperation = { ...userOpBase, signature } as PackedUserOperation;
 
-    // 4) Simulate
-    set({ status: { phase: "preparing", message: "Simulating" } });
-    const sim = await BundlerAPI.simulate(userOp, entryPoint);
-    if (!sim.success) { set({ status: { phase: "failed", message: sim.reason ?? "Simulation failed" } }); return }
-    set({ status: { phase: "simulated", message: "Simulation ok" } });
+    // 4) Send
+    set({ status: { phase: "preparing", message: "Submitting to bundler" } });
+
 
     // 5) Send
     try {
-      const { userOpHash } = await BundlerAPI.sendUserOp(userOp, entryPoint);
-      set({ status: { phase: "submitted", userOpHash, message: "Submitted to bundler" } });
+      const sim = await BundlerAPI.submit(userOp, domain) as any;
+      set({ status: { phase: "submitted", userOpHash: userOpHash, message: "Submitted to bundler" } });
 
       // 6) Poll for inclusion/finalization
       let tries = 0;
       const maxTries = 30;
       while (tries++ < maxTries) {
         await new Promise(r => setTimeout(r, 1500));
-        const rec = await BundlerAPI.getUserOpReceipt(userOpHash);
-        if (rec.included && rec.receipt?.transactionHash) {
-          set({ status: { phase: "included", userOpHash, hash: rec.receipt.transactionHash, message: "Included in block" } });
-        }
-        if (rec.finalized && rec.receipt?.transactionHash) {
-          set({ status: { phase: "finalized", userOpHash, hash: rec.receipt.transactionHash, message: rec.receipt.status === "0x1" ? "Success" : "Failed" } });
-          break;
+        const rec = await BundlerAPI.getTxReceipt(sender, userOpHash);
+        if (rec.success) {
+          set({ status: { phase: "included", userOpHash, hash: rec.txHash, message: "Included in block" } });
         }
       }
     } catch (e: any) {
@@ -365,7 +370,7 @@ export function Dashboard() { // may need to add an import token function here
         <Card><CardContent className="p-4"><div className="text-sm text-neutral-500">Security</div><div className="mt-1">Admin key active • Recovery off</div></CardContent></Card>
       </div>
       <div className="flex gap-2">
-        <Button onClick={() => startFlow({ sender: "0x0000000000000000000000000000000000000001" as Address, to: "0x0000000000000000000000000000000000000002" as Address, amountEth: "0.001", entryPoint: "0x0000000000000000000000000000000000000000" as Address, chainId: 11155111 })}>Send (demo)</Button>
+        <Button onClick={() => startFlow({ sender: "0x0000000000000000000000000000000000000001" as Address, to: "0x0000000000000000000000000000000000000002" as Address, amountEth: "0.001", paymaster: "0x0000000000000000000000000000000000000000" as Address, domain: `LOCAL` })}>Send (demo)</Button>
         <Button variant="outline" onClick={() => navigate("/transfer")}>Transfer</Button>
         <Button variant="outline" onClick={() => navigate("/wallets")}>Add Wallet</Button>
       </div>
@@ -400,7 +405,7 @@ export function Transfer() { // might rename as send
   async function onReview() {
     if (!to || !amount) { toast("Enter recipient and amount"); return }
     // ENS resolution can be integrated here if needed, also need to fetch sender address from wallet
-    await startFlow({ sender: "0x0000000000000000000000000000000000000001" as Address, to: to as Address, amountEth: amount, entryPoint: "0x0000000000000000000000000000000000000000" as Address, chainId: 11155111 });
+    await startFlow({ sender: "0x0000000000000000000000000000000000000001" as Address, to: to as Address, amountEth: amount, paymaster: "0x0000000000000000000000000000000000000000" as Address, domain: `LOCAL` });
     navigate("/dashboard");
   }
 
@@ -483,7 +488,7 @@ function ContactRow({ c }: { c: Contact }) {
       <div className="flex items-center gap-2">
         <Button size="sm" variant="outline" onClick={() => navigate(`/contacts/view/${c.id}`)}>View</Button>
         <Button size="icon" variant="ghost" onClick={() => setFav(v => !v)}>{fav ? <Star className="h-4 w-4" /> : <StarOff className="h-4 w-4" />}</Button>
-        <Button size="sm" onClick={() => startFlow({ sender: "0x0000000000000000000000000000000000000001" as Address, to: c.address, amountEth: "0.001", entryPoint: "0x0000000000000000000000000000000000000000" as Address, chainId: 11155111 })}>Send</Button> // change this to go to transfer screen with prefilled address
+        <Button size="sm" onClick={() => startFlow({ sender: "0x0000000000000000000000000000000000000001" as Address, to: c.address, amountEth: "0.001", paymaster: "0x0000000000000000000000000000000000000000" as Address, domain: `LOCAL` })}>Send</Button> // change this to go to transfer screen with prefilled address
       </div>
     </div>
   );
