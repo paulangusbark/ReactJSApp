@@ -1,7 +1,5 @@
-import { ntruGen } from "./ntrugen";
+
 import { sub_zq, mul_zq} from "./ntt";
-import { getKeys, addNewKey } from "@/repo";
-import { encodePkPacked, decodePkPacked } from "./falconPKPacked";
 import { fft, ifft, addFft, mulFft, sub, neg, Complex, cMul, cNeg, cScale } from "./fft";
 import { ChaCha20 } from "./chacha20";
 import { ffsampling_fft } from "./ffsampling";
@@ -9,7 +7,8 @@ import { FalconContext, buildFalconContext } from "./context";
 import { hashToPointCT } from "./hashMessage";
 import { BytesLike } from "./hashMessage";
 import { encodeSignatureHex } from "./signaturePacked";
-import { Poly, bigPolyToUint16 } from "./types";
+import { Poly } from "./types";
+import { getPrivateKey, FalconPrivateKey } from "@/storage/keyStore";
 
 const SALT_LEN = 40;
 const SEED_LEN = 56;
@@ -52,49 +51,6 @@ const defaultRandomBytes: RandomBytesFn = (length: number): Uint8Array => {
     throw new Error("No suitable random source configured for defaultRandomBytes");
   }
 };
-
-function getPrivateKey(): [Uint16Array, Uint16Array, Uint16Array, Uint16Array] {
-  console.log("[getPrivateKey] start");
-    // check db for private key
-    var check_keys = true;
-    const get_f = getKeys.get(`f`) as any;
-    const get_g = getKeys.get(`g`) as any;
-    const get_F = getKeys.get(`F`) as any;
-    const get_G = getKeys.get(`G`) as any;
-    if (!get_F && !get_f && !get_g && !get_G){
-        const [fPoly, gPoly, FPoly, GPoly] = ntruGen(1024);
-        const f = bigPolyToUint16(fPoly);
-        const g = bigPolyToUint16(gPoly);
-        const F = bigPolyToUint16(FPoly);
-        const G = bigPolyToUint16(GPoly);
-        const set_f = addNewKey.run(`f`, encodePkPacked(f)) as any;
-        const set_F = addNewKey.run(`F`, encodePkPacked(F)) as any;
-        const set_g = addNewKey.run(`g`, encodePkPacked(g)) as any;
-        const set_G = addNewKey.run(`G`, encodePkPacked(G)) as any;
-        if (!set_f || !set_F || !set_g || !set_G) throw new Error(`Failed to add new keys to db`);
-        return [f, F, g, G];
-    }
-    if (!get_F || !get_f || !get_g || !get_G) throw new Error(`Some keys missing in db`);
-    // if no private key, create one and save to db
-    const f = decodePkPacked(get_f.value);
-    const F = decodePkPacked(get_F.value);
-    const G = decodePkPacked(get_G.value);
-    const g = decodePkPacked(get_g.value);
-    return [f, F, g, G];
-}
-
-export function getPublicKey(): string {
-  const [ f, F, g, G ] = getPrivateKey();
-  const fPoly: Poly = Array.from(f, x => BigInt(x));
-  const gPoly: Poly = Array.from(g, x => BigInt(x));
-  const FPoly: Poly = Array.from(F, x => BigInt(x));
-  const GPoly: Poly = Array.from(G, x => BigInt(x));
-  const ctx = buildFalconContext({f: fPoly, g: gPoly, F: FPoly, G: GPoly, q: 12289, sigma: sigma, sigmin: sigmin, signatureBound: sig_bound});
-  const h: number[] = Array.from(ctx.h, x => Number(x));
-  const packed = encodePkPacked(h);   
-  const publicKeyHex = Buffer.from(packed).toString("hex");
-  return `0x${publicKeyHex}`;
-}
 
 // --- main function ---
 
@@ -182,16 +138,16 @@ export function samplePreimage(
   return [s0, s1];
 }
 
-export function sign(
+export async function sign(
   message: BytesLike,
   domain: BytesLike,
   randomBytes: RandomBytesFn = defaultRandomBytes
-): string {
-  const [ f, F, g, G ] = getPrivateKey();
-  const fPoly: Poly = Array.from(f, x => BigInt(x));
-  const gPoly: Poly = Array.from(g, x => BigInt(x));
-  const FPoly: Poly = Array.from(F, x => BigInt(x));
-  const GPoly: Poly = Array.from(G, x => BigInt(x));
+): Promise<string> {
+  const sk: FalconPrivateKey = await getPrivateKey();
+  const fPoly: Poly = Array.from(sk.f, x => BigInt(x));
+  const gPoly: Poly = Array.from(sk.g, x => BigInt(x));
+  const FPoly: Poly = Array.from(sk.F, x => BigInt(x));
+  const GPoly: Poly = Array.from(sk.G, x => BigInt(x));
   const ctx = buildFalconContext({f: fPoly, g: gPoly, F: FPoly, G: GPoly, q: 12289, sigma: sigma, sigmin: sigmin, signatureBound: sig_bound});
   const { n, q, signatureBound } = ctx;
 
