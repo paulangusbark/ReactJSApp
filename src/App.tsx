@@ -14,6 +14,7 @@ import { Check, Clock, Loader2, Star, StarOff } from "lucide-react";
 import { create } from "zustand";
 import './index.css'
 import { get } from "http";
+import { ensureFalconPrivateKey, getAddress} from "./storage/keyStore";
 
 /**
  * QuantumAccount React Skeleton v2 — wired to Bundler/Paymaster APIs
@@ -200,15 +201,19 @@ function abiEncodeExecute(to: Address, valueWei: bigint, data: `0x${string}`): `
 }
 
 // --- UI Shell & Navigation ---
-function AppShell({ children }: { children: React.ReactNode }) {
+function AppShell({ children, address, domain }: {
+  children: React.ReactNode,
+  address: string,
+  domain: string
+}) {
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900">
       <header className="sticky top-0 z-30 border-b bg-white/70 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <Link to="/dashboard" className="font-semibold">QuantumAccount</Link>
           <div className="flex items-center gap-2">
-            <NetworkPill />
-            <WalletSwitcher />
+            <NetworkPill address={address} />
+            <WalletSwitcher domain={domain} />
             <Link to="/settings" className="text-sm underline">Settings</Link>
           </div>
         </div>
@@ -232,6 +237,87 @@ function AppShell({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+
+async function initWallet(): Promise<string> {
+
+  await ensureFalconPrivateKey();
+  const addr = await getAddress(`default`); // example for now, will replace with uuid from auth
+
+  if (!addr) {
+    throw new Error("Public key not available after ensureFalconPrivateKey");
+  }
+
+  return addr;
+}
+
+function AppContainer() {
+  const [address, setAddress] = React.useState<string | null>(null);
+  const [domain, setDomain] = React.useState<string>("default"); // example
+  const [error, setError] = React.useState<string | null>(null);
+
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        console.log("[Wallet] Initialising…");
+        const addr = await initWallet();
+        console.log("[Wallet] Ready with address:", addr);
+        if (!cancelled) {
+          setAddress(addr);
+        }
+      } catch (e: any) {
+        console.error("[Wallet] Init failed:", e);
+        if (!cancelled) {
+          setError(e?.message ?? "Unknown wallet init error");
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (error) {
+    return (
+      <div className="p-6 text-red-700">
+        <h1 className="text-lg font-semibold mb-2">Wallet initialisation failed</h1>
+        <p className="mb-2">{error}</p>
+        <p className="text-sm text-neutral-600">
+          Check the console for details.
+        </p>
+      </div>
+    );
+  }
+
+  if (!address) {
+    return (
+      <div className="p-6">
+        Initialising QuantumAccount wallet…
+      </div>
+    );
+  }
+
+  return (
+    <AppShell address={address} domain={domain}>
+      <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/transfer" element={<Transfer />} />
+          <Route path="/contacts" element={<Contacts />} />
+          <Route path="/contacts/add" element={<AddContact />} />
+          <Route path="/favourites" element={<Favourites />} />
+          <Route path="/wallets" element={<Wallets />} />
+          <Route path="/legal/terms" element={<Terms />} />
+          <Route path="/legal/privacy" element={<Privacy />} />
+        </Routes>
+    </AppShell>
+  );
+}
+
 
 function Nav({ to, label }: { to: string; label: string }) {
   return (
@@ -260,15 +346,15 @@ function BottomNav() {
   );
 }
 
-function NetworkPill() {  // either delete to switch to show network name
+function NetworkPill({ address }: { address: string }) {  // either delete to switch to show network name
   return (
-    <Badge variant="secondary" className="rounded-full">Sepolia</Badge>
+    <Badge variant="secondary" className="rounded-full">{address}</Badge>
   );
 }
 
-function WalletSwitcher() { // may delete this
+function WalletSwitcher({ domain }: { domain: string }) { // need to add function to switch domains
   return (
-    <Button size="sm" variant="outline">QA#1</Button>
+    <Button size="sm" variant="outline">{domain}</Button>
   );
 }
 
@@ -619,20 +705,7 @@ export function Privacy() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AppShell>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/transfer" element={<Transfer />} />
-          <Route path="/contacts" element={<Contacts />} />
-          <Route path="/contacts/add" element={<AddContact />} />
-          <Route path="/favourites" element={<Favourites />} />
-          <Route path="/wallets" element={<Wallets />} />
-          <Route path="/legal/terms" element={<Terms />} />
-          <Route path="/legal/privacy" element={<Privacy />} />
-        </Routes>
-      </AppShell>
+      <AppContainer />
     </BrowserRouter>
   );
 }

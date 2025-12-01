@@ -1,7 +1,22 @@
-import { randomBytes } from "crypto";
+//import { randomBytes } from "crypto";
 
 // Simple RNG type we control
-export type RNG = (len: number) => Buffer;
+export type RNG = (len: number) => Uint8Array;
+
+
+// Secure random bytes using Web Crypto API
+export function randomBytes(len: number): Uint8Array {
+  const out = new Uint8Array(len);
+
+  // Works in modern browsers
+  if (typeof globalThis.crypto !== "undefined" && "getRandomValues" in globalThis.crypto) {
+    (globalThis.crypto as Crypto).getRandomValues(out);
+    return out;
+  }
+
+  // If you *ever* hit this in the browser, something is very wrong
+  throw new Error("Secure random generator (crypto.getRandomValues) not available in this environment.");
+}
 
 // Wrap Node's randomBytes into our simple RNG
 const defaultRng: RNG = (len: number) => randomBytes(len);

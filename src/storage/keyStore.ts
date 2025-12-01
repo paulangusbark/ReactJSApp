@@ -4,6 +4,8 @@ import { encodePkPacked } from "@/crypto/falconPKPacked";
 import { bigPolyToUint16 } from "@/crypto/types";
 import { buildFalconContext } from "@/crypto/context";
 import { Poly } from "@/crypto/types";
+import { predictQuantumAccountAddress } from "@/lib/predictQuantumAccountAddress";
+import { stringToHex, bytesToHex } from "viem";
 
 export type FalconPrivateKey = {
     f: Uint16Array;
@@ -237,7 +239,7 @@ export async function generateAndStoreFalconPrivateKey(): Promise<FalconPrivateK
 export async function ensureFalconPrivateKey(): Promise<Boolean> {
   const existing = await getFalconPrivateKeyOrNull();
   if (existing) return !!existing;
-  const newKey = generateAndStoreFalconPrivateKey();
+  const newKey = await generateAndStoreFalconPrivateKey();
   return !!newKey;
 }
 
@@ -251,4 +253,26 @@ export async function getPrivateKey(): Promise<FalconPrivateKey> {
         throw new Error("Falcon private key not found");
     }
     return sk;
+}
+
+export async function getAddress(salt: string): Promise<string> {
+    const pk = await getFalconPublicKey();
+    if (!pk) {
+        throw new Error("Falcon public key not found");
+    }
+    const entryPointAddress = `0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496`; // need to replace with domain look up
+    const factoryAddress = `0x90193C961A926261B756D1E5bb255e67ff9498A1`; // need to replace with domain look up
+    const falconAddress = `0x34A1D3fff3958843C43aD80F30b94c510645C316`; // need to replace with domain look up
+    const ownerAddress = `0xADBD6a7c08f0A747ae1AEE16B6B86B7DF14dD113`; // need to replace with rpc key address (may create domain type structure later)
+    const domainName = `LOCAL`; // need to replace with user input domain name
+    const address = predictQuantumAccountAddress({
+        entryPoint: entryPointAddress, 
+        factory: factoryAddress, 
+        falcon: falconAddress, 
+        owner: ownerAddress, 
+        domain: stringToHex(domainName), 
+        publicKeyBytes: bytesToHex(pk), 
+        salt: stringToHex(salt),
+    });
+    return address;
 }
