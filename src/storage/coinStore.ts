@@ -14,11 +14,38 @@ export type Coin = {
   decimals: number; // decimal places (should be 0 for NFTs)
   chainId: number;  // blockchain network ID
   address: string;  // contract coin
-  type: string; // token type (e.g., ERC20, BEP20)
+  type: string; // token type (e.g., NATIVE, ERC20, ERC1155)
   tags?: string[];  // optional tags for categorization
   createdAt: number;       // ms since epoch
   updatedAt: number;       // ms since epoch
 };
+
+const BUILTIN_COINS: Coin[] = [
+  {
+    id: "builtin:eth-sepolia",
+    name: "Ether Sepolia",
+    symbol: "ETH",
+    decimals: 18,
+    chainId: 11155111,
+    address: "0x0",        // empty since there is no smart contract
+    type: "NATIVE",        
+    tags: [],
+    createdAt: 0,
+    updatedAt: 0,
+  },
+  {
+    id: "builtin:eth-mainnet",
+    name: "Ether",
+    symbol: "ETH",
+    decimals: 18,
+    chainId: 1,
+    address: "0x0",        // empty since there is no smart contract
+    type: "NATIVE",        
+    tags: [],
+    createdAt: 0,
+    updatedAt: 0,
+  },
+];
 
 
 
@@ -27,9 +54,10 @@ export type Coin = {
 type coinListener = (coin: Coin[]) => void;
 const listeners = new Set<coinListener>();
 
-function notifyCoinsUpdated(coin: Coin[]) {
+function notifyCoinsUpdated(coins: Coin[]) {
+  const allCoins = [...BUILTIN_COINS, ...coins];
   for (const listener of listeners) {
-    listener(coin);
+    listener(allCoins);
   }
 }
 
@@ -102,7 +130,8 @@ async function saveCoinsRaw(coins: Coin[]): Promise<void> {
 // --- Public API --------------------------------------------------------------
 
 export async function getAllCoins(): Promise<Coin[]> {
-  return loadCoinsRaw();
+  const coins = await loadCoinsRaw();
+  return [...BUILTIN_COINS, ...coins];
 }
 
 export async function addCoin(input: {
@@ -139,6 +168,12 @@ export async function updateCoin(
   id: string,
   patch: Partial<Omit<Coin, "id" | "createdAt">>
 ): Promise<Coin[]> {
+  // Prevent editing built-in coins
+  if (BUILTIN_COINS.some(c => c.id === id)) {
+    // future option to include error
+    return getAllCoins();
+  }
+
   const coins = await loadCoinsRaw();
   const now = Date.now();
   const updated = coins.map(c =>
@@ -152,14 +187,20 @@ export async function updateCoin(
   );
 
   await saveCoinsRaw(updated);
-  return updated;
+  return [...BUILTIN_COINS, ...updated];
 }
 
 export async function deleteCoin(id: string): Promise<Coin[]> {
+  // Do not allow deleting built-in coins
+  if (BUILTIN_COINS.some(c => c.id === id)) {
+    // Future option to return an error
+    return getAllCoins();
+  }
+
   const coins = await loadCoinsRaw();
   const updated = coins.filter(c => c.id !== id);
   await saveCoinsRaw(updated);
-  return updated;
+  return [...BUILTIN_COINS, ...updated];
 }
 
 export async function clearCoins(): Promise<void> {
