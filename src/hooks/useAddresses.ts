@@ -1,4 +1,3 @@
-// src/hooks/useaddresss.ts
 import * as React from "react";
 import {
   Address,
@@ -10,7 +9,7 @@ import {
   subscribeToAddress,
 } from "../storage/addressStore";
 
-type UseAddresssResult = {
+type UseAddressResult = {
   address: Address[];
   loading: boolean;
   error: string | null;
@@ -20,7 +19,7 @@ type UseAddresssResult = {
   clearAddress: typeof storeClearAddress;
 };
 
-export function useAddresss(): UseAddresssResult {
+export function useAddress(): UseAddressResult {
   const [address, setAddress] = React.useState<Address[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);

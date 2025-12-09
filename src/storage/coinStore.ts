@@ -15,7 +15,7 @@ export type Coin = {
   chainId: number;  // blockchain network ID
   address: string;  // contract coin
   type: string; // token type (e.g., ERC20, BEP20)
-  tag?: string[];  // optional tags for categorization
+  tags?: string[];  // optional tags for categorization
   createdAt: number;       // ms since epoch
   updatedAt: number;       // ms since epoch
 };
@@ -112,14 +112,14 @@ export async function addCoin(input: {
   chainId: number;  // blockchain network ID
   address: string;  // contract coin
   type: string; // token type (e.g., ERC20, BEP20)
-  tag?: string[];  // optional tags for categorization
+  tags?: string[];  // optional tags for categorization
 }): Promise<Coin[]> {
   const now = Date.now();
   const coins = await loadCoinsRaw();
 
   const newCoin: Coin = {
     id: `coin:${crypto.randomUUID?.() ?? `${now}:${coins.length}`}`,
-    tag: input.tag || undefined,
+    tags: input.tags || undefined,
     name: input.name,
     decimals: input.decimals,
     chainId: input.chainId,

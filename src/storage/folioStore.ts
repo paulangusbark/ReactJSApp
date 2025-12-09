@@ -15,6 +15,7 @@ export type Wallet = {
 export type Folio = {
   id: string;  // unique identifier
   address: string;  // wallet address
+  name: string;  // label for the folio
   chainId: number;  // blockchain network ID
   paymaster: string; // paymaster address
   type: number; // small number for bitchecking
@@ -112,6 +113,7 @@ export async function getAllFolios(): Promise<Folio[]> {
 export async function addFolio(input: {
   address: string;  // wallet address
   chainId: number;  // blockchain network ID
+  name: string;  // label for the folio
   paymaster: string; // paymaster address
   type: number; // small number for bitchecking
   bundler: string; // bundler address
@@ -125,6 +127,7 @@ export async function addFolio(input: {
   const newFolio: Folio = {
     id: `folio:${crypto.randomUUID?.() ?? `${now}:${folios.length}`}`,
     chainId: input.chainId,
+    name: input.name,
     address: input.address,
     paymaster: input.paymaster,
     type: input.type,

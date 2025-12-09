@@ -1,6 +1,6 @@
 import { Folio } from "../storage/folioStore";
 
-export type FolioSortMode = "createdDesc" | "addressAsc" | "addressDesc" | "createdAsc" | "chainIdAsc" | "chainIdDesc";
+export type FolioSortMode = "createdDesc" | "addressAsc" | "addressDesc" | "createdAsc" | "chainIdAsc" | "chainIdDesc" | "nameAsc" | "nameDesc";
 
 export function sortFolios(
   folios: Folio[],
@@ -23,6 +23,14 @@ export function sortFolios(
   } else if (mode === "addressDesc") {
     copy.sort((a, b) =>
       b.address.toLocaleLowerCase().localeCompare(a.address.toLocaleLowerCase())
+    );
+  } else if (mode === "nameAsc") {
+    copy.sort((a, b) =>
+      a.name.toLocaleLowerCase().localeCompare(b.name.toLocaleLowerCase())
+    );
+  } else if (mode === "nameDesc") {
+    copy.sort((a, b) =>
+      b.name.toLocaleLowerCase().localeCompare(a.name.toLocaleLowerCase())
     );
   }
 
