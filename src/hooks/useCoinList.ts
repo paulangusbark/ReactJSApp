@@ -7,7 +7,7 @@ type UseCoinListOptions = {
   tags?: string[];
   standard?: string;
   chainId?: number;
-  tagMode?: boolean; // true = "any" | false = "all"
+  tagMode?: string; // "any" | "all"
   sortMode?: CoinSortMode;
 };
 
@@ -33,12 +33,12 @@ export function useCoinList(options: UseCoinListOptions = {}) {
       list = list.filter(c => c.type === standard);
     }
 
-    if (chainId) {
+    if (chainId != 0) {
       list = list.filter(c => c.chainId === chainId);
     }
 
     if (tags && tags.length > 0) {
-      if (tagMode) {
+      if (tagMode == "any") {
         // ANY MATCH (OR)
         list = list.filter(c =>
           c.tags?.some(tag => tags.includes(tag))

@@ -21,6 +21,15 @@ export function Contacts() {
   const [tagInput, setTagInput] = React.useState("");
   const [formWallets, setFormWallets] = React.useState<Wallet[]>([]);
 
+  const EVM_ADDRESS_REGEX = /^0x[0-9a-fA-F]{40}$/;
+  const ENS_REGEX = /^[a-z0-9-]+\.eth$/i;
+
+  const CHAIN_NAMES: Record<number, string> = {
+    1: "Ethereum",
+    11155111: "Sepolia",
+    31337: "Local",
+  };
+
   const {
     contacts,
     loading,
@@ -89,6 +98,16 @@ export function Contacts() {
 
   function handleWalletChange(index: number, field: keyof Wallet, value: string) {
     setFormWallets(prev => {
+
+      if (field === "address") {
+      const trimmed = value.trim();
+      // Allow empty value while editing; only block non-empty invalid ones
+      if (trimmed !== "" && !EVM_ADDRESS_REGEX.test(trimmed) && !ENS_REGEX.test(trimmed)) {
+        // Invalid address → do not update state
+        return prev;
+      }
+    }
+
       const next = [...prev];
       const w = { ...next[index] };
       if (field === "chainId") {
@@ -338,13 +357,13 @@ export function Contacts() {
                       <select
                         className="w-20 rounded-md border px-1 py-0.5 text-xs"
                         value={w.chainId}
-                        onChange={e =>
-                          handleWalletChange(idx, "chainId", e.target.value)
-                        }
+                        onChange={e => handleWalletChange(idx, "chainId", e.target.value)}
                       >
-                        <option value={1}>Ethereum</option>
-                        <option value={11155111}>Sepolia</option>
-                        <option value={31337}>Local</option>
+                      {Object.entries(CHAIN_NAMES).map(([id, label]) => (
+                        <option key={id} value={id}>
+                          {label}
+                        </option>
+                      ))}
                       </select>
                       <input
                         className="flex-1 rounded-md border px-2 py-0.5 text-xs font-mono"

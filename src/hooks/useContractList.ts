@@ -6,15 +6,15 @@ type UseContractsListOptions = {
   query?: string;
   tags?: string[];
   chainId?: number;
-  tagMode?: boolean; // true = "any" | false = "all"
+  tagMode?: string; // "any" | "all"
   sortMode?: ContractSortMode;
 };
 
-export function useContactsList(options: UseContractsListOptions = {}) {
+export function useContractsList(options: UseContractsListOptions = {}) {
   const { contracts, loading, error, addContract, updateContract, deleteContract, clearContracts } =
     useContracts();
 
-  const { query = "", sortMode = "nameAsc", tags=[], tagMode = true, chainId = 0 } = options;
+  const { query = "", sortMode = "nameAsc", tags=[], tagMode = "any", chainId = 0 } = options;
 
   const filteredAndSorted = React.useMemo(() => {
     let list = contracts;
@@ -32,7 +32,7 @@ export function useContactsList(options: UseContractsListOptions = {}) {
     }
 
     if (tags && tags.length > 0) {
-      if (tagMode) {
+      if (tagMode == "any") {
         // ANY MATCH (OR)
         list = list.filter(c =>
           c.tags?.some(tag => tags.includes(tag))
