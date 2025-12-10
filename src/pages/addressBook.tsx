@@ -1,11 +1,12 @@
 import * as React from "react";
 import { useAddressList } from "../hooks/useAddressList";
+import { AddressSortableList } from "../components/ui/addressSortableList"
 import { Address } from "@/storage/addressStore";
 
-export function Address() {
+export function AddressBook() {
   const [query, setQuery] = React.useState("");
   const [sortMode, setSortMode] = React.useState<"nameAsc" | "createdDesc" | "nameDesc" | "createdAsc" | "custom">(
-    "nameAsc"
+    "custom"
   );
   const [tags, setTags] = React.useState<string[]>([]);
   const [tagMode, setTagSearchMode] = React.useState("any");
@@ -20,14 +21,35 @@ export function Address() {
     updateAddress,
   } = useAddressList({ query, sortMode, tags, tagMode });
 
+  // Only display visible addresses
+  const visibleAddresses = React.useMemo(
+    () => address.filter((a) => a.isVisible !== false),
+    [address]
+  );
 
-  if (loading) return <div className="p-4">Loading Addresss…</div>;
+  async function handleReorder(updated: Address[]) {
+    // updated is the *visible* list in the new order
+    // assign indexOrder based on new position
+    await Promise.all(
+      updated.map((addr, idx) =>
+        updateAddress(addr.id, { indexOrder: idx })
+      )
+    );
+    // useAddressList should re-emit state after updates
+  }
+
+  async function handleHide(id: string) {
+    await updateAddress(id, { isVisible: false });
+    // On next render, visibleAddresses will filter it out
+  }
+
+  if (loading) return <div className="p-4">Loading Address…</div>;
   if (error) return <div className="p-4 text-red-600">{error}</div>;
 
   return (
     <div className="space-y-4 p-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-lg font-semibold">Addresss</h1>
+        <h1 className="text-lg font-semibold">Address Book</h1>
 
         <div className="flex flex-1 gap-2 sm:justify-end">
           <input
@@ -42,9 +64,9 @@ export function Address() {
             value={sortMode}
             onChange={e => setSortMode(e.target.value as any)}
           >
+            <option value="custom">Template</option>
             <option value="nameAsc">Name (A → Z)</option>
             <option value="nameDesc">Name (Z → A)</option>
-            <option value="custom">Custom</option>
             <option value="createdDesc">Newest first</option>
             <option value="createdAsc">Oldest first</option>
           </select>
@@ -75,42 +97,19 @@ export function Address() {
         </div>
       </div>
 
-      {address.length === 0 ? (
-        <div className="text-sm text-neutral-500">
-          No Addresss yet. Add one from the transaction screen or here.
-        </div>
-      ) : (
-        <ul className="space-y-2">
-          {address.map(c => (
-            <li
-              key={c.id}
-              className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm"
-            >
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{c.name}</span>
-                </div>
-                <div className="text-xs text-neutral-500">{c.name}</div>
-
-              </div>
-
-              {c.group && c.group.length > 0 && (
-                  <div className="mt-1 flex flex-wrap gap-1 text-[10px] text-neutral-500">
-                    {c.group.map(tag => (
-                      <span
-                        key={tag}
-                        className="rounded-full border px-2 py-0.5"
-                      >
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-            </li>
-          ))}
-        </ul>
+      {sortMode !== "custom" && (
+        <p className="text-xs text-gray-500">
+          Switch to <span className="font-semibold">Custom</span> to drag and
+          reorder addresses manually.
+        </p>
       )}
+
+      <AddressSortableList
+        items={visibleAddresses}
+        sortMode={sortMode}
+        onReorder={handleReorder}
+        onHide={handleHide}
+      />
 
 
     </div>
