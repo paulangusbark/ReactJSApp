@@ -1,6 +1,111 @@
-import { Folio } from "../storage/folioStore";
+import { PortfolioStore, Folio } from "../storage/folioStore";
+import { Coin } from "@/storage/coinStore";
 
-export type FolioSortMode = "createdDesc" | "addressAsc" | "addressDesc" | "createdAsc" | "chainIdAsc" | "chainIdDesc" | "nameAsc" | "nameDesc";
+export type FolioSortMode = "createdDesc" | "addressAsc" | "addressDesc" | "createdAsc" | "chainIdAsc" | "chainIdDesc" | "nameAsc" | "nameDesc" | "coinSymbolAsc" | "coinSymbolDesc" | "coinBalanceAsc" | "coinBalanceDesc";
+
+// helper functions
+
+function compareString(a?: string, b?: string): number {
+  const as = (a ?? "").toLocaleLowerCase();
+  const bs = (b ?? "").toLocaleLowerCase();
+  return as.localeCompare(bs);
+}
+
+function compareNumber(a?: number, b?: number): number {
+  const an = a ?? 0;
+  const bn = b ?? 0;
+  if (an < bn) return -1;
+  if (an > bn) return 1;
+  return 0;
+}
+
+export function sortPortfolio(
+  portfolio: PortfolioStore[],
+  folios: Folio[],
+  coins: Coin[],
+  mode: FolioSortMode
+): PortfolioStore[] {
+  const copy = [...portfolio];
+
+  // Build lookup maps once
+  const folioById = new Map(folios.map(f => [f.id, f]));
+  const coinById = new Map(coins.map(c => [c.id, c]));
+
+  copy.sort((a, b) => {
+    const folioA = folioById.get(a.folioId);
+    const folioB = folioById.get(b.folioId);
+
+    const coinA = coinById.get(a.coinId);
+    const coinB = coinById.get(b.coinId);
+
+    const walletA = folioA?.wallet?.[a.walletId];
+    const walletB = folioB?.wallet?.[b.walletId];
+
+    switch (mode) {
+      case "nameAsc":
+        return compareString(folioA?.name, folioB?.name);
+
+      case "nameDesc":
+        return compareString(folioB?.name, folioA?.name);
+
+      case "createdAsc":
+        return compareNumber(folioA?.createdAt, folioB?.createdAt);
+
+      case "createdDesc":
+        return compareNumber(folioB?.createdAt, folioA?.createdAt);
+
+      case "addressAsc":
+        return compareString(folioA?.address, folioB?.address);
+
+      case "addressDesc":
+        return compareString(folioB?.address, folioA?.address);
+
+      case "chainIdAsc":
+        return compareNumber(folioA?.chainId, folioB?.chainId);
+
+      case "chainIdDesc":
+        return compareNumber(folioB?.chainId, folioA?.chainId);
+
+      case "coinSymbolAsc":
+        return compareString(coinA?.symbol, coinB?.symbol);
+
+      case "coinSymbolDesc":
+        return compareString(coinB?.symbol, coinA?.symbol);
+
+      case "coinBalanceAsc": {
+        const balA = Number(walletA?.balance ?? 0);
+        const balB = Number(walletB?.balance ?? 0);
+
+        const decA = coinA?.decimals ?? 1;
+        const decB = coinB?.decimals ?? 1;
+
+        const normA = balA / decA;
+        const normB = balB / decB;
+
+        return compareNumber(normA, normB);
+      }
+
+      case "coinBalanceDesc": {
+        const balA = Number(walletA?.balance ?? 0);
+        const balB = Number(walletB?.balance ?? 0);
+
+        const decA = coinA?.decimals ?? 1;
+        const decB = coinB?.decimals ?? 1;
+
+        const normA = balA / decA;
+        const normB = balB / decB;
+
+        return compareNumber(normB, normA);
+      }
+
+      default:
+        return 0;
+    }
+  });
+
+  return copy;
+}
+
 
 export function sortFolios(
   folios: Folio[],
@@ -8,32 +113,38 @@ export function sortFolios(
 ): Folio[] {
   const copy = [...folios];
 
-  if (mode === "createdAsc") {
-    copy.sort((a, b) => a.createdAt - b.createdAt);
-  } else if (mode === "createdDesc") {
-    copy.sort((a, b) => b.createdAt - a.createdAt);
-  } else if (mode === "chainIdAsc") {
-    copy.sort((a, b) => a.chainId - b.chainId);
-  } else if (mode === "chainIdDesc") {
-    copy.sort((a, b) => b.chainId - a.chainId);
-  } else if (mode === "addressAsc") {
-    copy.sort((a, b) =>
-      a.address.toLocaleLowerCase().localeCompare(b.address.toLocaleLowerCase())
-    );
-  } else if (mode === "addressDesc") {
-    copy.sort((a, b) =>
-      b.address.toLocaleLowerCase().localeCompare(a.address.toLocaleLowerCase())
-    );
-  } else if (mode === "nameAsc") {
-    copy.sort((a, b) =>
-      a.name.toLocaleLowerCase().localeCompare(b.name.toLocaleLowerCase())
-    );
-  } else if (mode === "nameDesc") {
-    copy.sort((a, b) =>
-      b.name.toLocaleLowerCase().localeCompare(a.name.toLocaleLowerCase())
-    );
-  }
+  copy.sort((a, b) => {
 
+  switch (mode) {
+      case "nameAsc":
+        return compareString(a.name, b.name);
 
+      case "nameDesc":
+        return compareString(b.name, a.name);
+
+      case "createdAsc":
+        return compareNumber(a.createdAt, b.createdAt);
+
+      case "createdDesc":
+        return compareNumber(b.createdAt, a.createdAt);
+
+      case "addressAsc":
+        return compareString(a.address, b.address);
+
+      case "addressDesc":
+        return compareString(b.address, a.address);
+
+      case "chainIdAsc":
+        return compareNumber(a.chainId, b.chainId);
+
+      case "chainIdDesc":
+        return compareNumber(b.chainId, a.chainId);
+
+      default:
+        return 0;
+    }
+
+  });
   return copy;
+  
 }

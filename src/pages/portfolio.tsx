@@ -1,17 +1,18 @@
 import * as React from "react";
 import { useFolioList } from "../hooks/useFolioList";
-import { Folio } from "@/storage/folioStore";
+import { PortfolioStore, Folio } from "@/storage/folioStore";
+import { sortPortfolio } from "@/lib/folioSorting";
 import { useCoinList } from "@/hooks/useCoinList";
 import { Coin } from "@/storage/coinStore"; 
 import { useMemo } from "react";
 
 export function Folios() {
   const [query, setQuery] = React.useState("");
-  const [sortMode, setSortMode] = React.useState< "createdDesc" | "addressAsc" | "addressDesc" | "createdAsc" | "chainIdAsc" | "chainIdDesc" | "nameAsc" | "nameDesc"  >(
+  const [sortMode, setSortMode] = React.useState< "createdDesc" | "addressAsc" | "addressDesc" | "createdAsc" | "chainIdAsc" | "chainIdDesc" | "nameAsc" | "nameDesc" | "coinSymbolAsc" | "coinSymbolDesc" | "coinBalanceAsc" | "coinBalanceDesc" >(
     "nameAsc"
   );
-  const [secondarySortMode, setSecondarySortMode] = React.useState< "folioSort" | "coinSymbolAsc" | "coinSymbolDesc" | "coinBalanceAsc" | "coinBalanceDesc" >(
-    "folioSort"
+  const [secondarySortMode, setSecondarySortMode] = React.useState< "createdDesc" | "addressAsc" | "addressDesc" | "createdAsc" | "chainIdAsc" | "chainIdDesc" | "nameAsc" | "nameDesc" | "coinSymbolAsc" | "coinSymbolDesc" | "coinBalanceAsc" | "coinBalanceDesc" >(
+    "coinBalanceDesc"
   );
   const [tags, setTags] = React.useState<string[]>([]);
   const [tagMode, setTagSearchMode] = React.useState("any");
@@ -51,7 +52,60 @@ export function Folios() {
     addFolio,
     deleteFolio,
     updateFolio,
-  } = useFolioList({ query, sortMode, chainId });
+  } = useFolioList({ query, sortMode: "createdAsc", chainId });
+
+  // Combine folios and coins into portfolio view
+  const mapPortfolio = React.useMemo(() => {
+    const portfolio: PortfolioStore[] = [];
+
+    for (const folio of folios) {
+      const walletCount = folio.wallet?.length ?? 0;
+
+      if (walletCount > 0) {
+        for (let i = 0; i < walletCount; i++) {
+          portfolio.push({
+            folioId: folio.id,
+            coinId: folio.wallet?.[i]?.coin ?? "",
+            walletId: i,
+          });
+        }
+      } else {
+        portfolio.push({
+          folioId: folio.id,
+          coinId: "",
+          walletId: -1,
+        });
+      }
+    }
+
+    return portfolio;
+  }, [folios, coins]);
+
+  const sortedPortfolio = React.useMemo(() => {
+    return sortPortfolio(mapPortfolio, folios, coins, sortMode);
+  }, [mapPortfolio, folios, coins, sortMode]);
+
+  function formatBalance(balance: bigint, decimals: number): string {
+    if (decimals <= 0) return balance.toString();
+
+    const negative = balance < 0n;
+    const value = negative ? -balance : balance;
+
+    const base = 10n;
+    const factor = base ** BigInt(decimals);
+
+    const integer = value / factor;
+    const fraction = value % factor;
+
+    let fractionStr = fraction.toString().padStart(decimals, "0");
+    // trim trailing zeros in fraction part
+    fractionStr = fractionStr.replace(/0+$/, "");
+
+    const result =
+      integer.toString() + (fractionStr.length > 0 ? "." + fractionStr : "");
+
+    return negative ? "-" + result : result;
+  }
 
   // --- Modal helpers ---------------------------------------------------------
 
@@ -108,7 +162,7 @@ export function Folios() {
   return (
     <div className="space-y-4 p-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-lg font-semibold">Coins</h1>
+        <h1 className="text-lg font-semibold">Portfolio</h1>
 
         <div className="flex flex-1 gap-2 sm:justify-end">
           <input
@@ -121,7 +175,21 @@ export function Folios() {
           <select
             className="rounded-md border px-2 py-1 text-sm"
             value={sortMode}
-            onChange={e => setSortMode(e.target.value as any)}
+            onChange={e => setSortMode(e.target.value as any)} // sort by secondary and then primary so need holder
+          >
+            <option value="nameAsc">Name (A → Z)</option>
+            <option value="nameDesc">Name (Z → A)</option>
+            <option value="symbolAsc">Symbol (A → Z)</option>
+            <option value="symbolDesc">Symbol (Z → A)</option>
+            <option value="chainIdAsc">Chain ID (Low → High)</option>
+            <option value="chainIdDesc">Chain ID (High → Low)</option>
+            <option value="createdDesc">Newest first</option>
+            <option value="createdAsc">Oldest first</option>
+          </select>
+          <select
+            className="rounded-md border px-2 py-1 text-sm"
+            value={secondarySortMode}
+            onChange={e => setSecondarySortMode(e.target.value as any)}  // sort by secondary and then primary so need holder
           >
             <option value="nameAsc">Name (A → Z)</option>
             <option value="nameDesc">Name (Z → A)</option>
@@ -134,7 +202,7 @@ export function Folios() {
           </select>
           <input
             className="..."
-            placeholder="Filter by tags (comma-separated)…"
+            placeholder="Filter by coin tags (comma-separated)…"
             value={tagSearch}
             onChange={e => {
               const raw = e.target.value;
@@ -159,58 +227,79 @@ export function Folios() {
         </div>
       </div>
 
-      {coins.length === 0 ? (
+      {mapPortfolio.length === 0 ? (
         <div className="text-sm text-neutral-500">
-          No coins yet. Add one from the transaction screen or here.
+          No accounts created yet. Click &quot;Create Account&quot; to get started.
         </div>
       ) : (
         <ul className="space-y-2">
-          {coins.map(c => (
+          {mapPortfolio.map(item => {
+          // Look up associated folio and coin
+          const folio = folios.find(f => f.id === item.folioId);
+          const coin = coins.find(c => c.id === item.coinId);
+          const wallet = folio?.wallet?.[item.walletId];
+
+          const folioName = folio?.name ?? item.folioId;
+          const coinSymbol = coin?.symbol ?? "—";
+          const chainName =
+            folio && CHAIN_NAMES[folio.chainId]
+              ? CHAIN_NAMES[folio.chainId]
+              : folio
+              ? `Chain ${folio.chainId}`
+              : "Unknown chain";
+
+          const balanceStr =
+            wallet && coin
+              ? formatBalance(wallet.balance, coin.decimals)
+              : "0";
+
+          return (
             <li
-              key={c.id}
+              key={`${item.folioId}-${item.coinId}-${item.walletId}`}
               className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm"
             >
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-medium">{c.name}</span>
+                  {/* Folio name */}
+                  <span className="font-medium">{folioName}</span>
                 </div>
-                <div className="text-xs text-neutral-500">{c.symbol}</div>
-                <div className="text-xs text-neutral-500">{c.type}</div>
+
+                {/* Coin symbol */}
+                <div className="text-xs text-neutral-500">{coinSymbol}</div>
+
+                {/* Chain name */}
+                <div className="text-xs text-neutral-500">{chainName}</div>
+
+                {/* Wallet balance */}
                 <div className="text-xs text-neutral-500">
-                    {CHAIN_NAMES[c.chainId] ?? c.chainId} - {c.address}
+                  Balance: {balanceStr} {coinSymbol}
                 </div>
               </div>
 
-              {c.tags && c.tags.length > 0 && (
-                  <div className="mt-1 flex flex-wrap gap-1 text-[10px] text-neutral-500">
-                    {c.tags.map(tag => (
-                      <span
-                        key={tag}
-                        className="rounded-full border px-2 py-0.5"
-                      >
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-              <div className="flex items-center gap-2 text-xs">
+              <div className="flex flex-col items-end gap-1 text-xs">
+                {/* Keep these if you still want actions, wired to the folio */}
                 <button
                   className="underline"
-                  onClick={() => openEditModal(c)}
+                  disabled={!folio}
+                  onClick={() => folio && openEditModal(folio)}
                 >
-                  Edit
+                  Edit Label
                 </button>
                 <button
                   className="text-red-600 underline"
-                  onClick={() => deleteCoin(c.id)}
+                  onClick={() => deleteFolio(item.folioId)}
                 >
-                  Remove
+                  Remove Account
                 </button>
+
+                <span className="text-[10px] text-neutral-500">
+                  wallet #{item.walletId}
+                </span>
               </div>
             </li>
-          ))}
-        </ul>
+          );
+        })}
+      </ul>
       )}
 
 {/* Modal */}
@@ -218,7 +307,7 @@ export function Folios() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="w-full max-w-md rounded-lg bg-white p-4 shadow-lg">
             <h2 className="mb-3 text-base font-semibold">
-              {editingCoin ? "Edit coin" : "Add coin"}
+              {editingFolio ? "Change Label" : "Create Account"}
             </h2>
 
             <form className="space-y-4" onSubmit={handleSubmit}>
@@ -232,104 +321,6 @@ export function Folios() {
                 />
               </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-medium">Address or ENS</label>
-                <input
-                  className="w-full rounded-md border px-2 py-1 text-sm"
-                  value={formAddress}
-                  onChange={e => {
-                    const trimmed = e.target.value.trim();
-  
-                    const isEthAddress = EVM_ADDRESS_REGEX.test(trimmed);
-                    const isENS = ENS_REGEX.test(trimmed);
-
-                    if (trimmed === "" || isEthAddress || isENS) {
-                        setFormAddress(e.target.value);
-                    }
-                  }}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-medium">Symbol</label>
-                <input
-                  className="w-full rounded-md border px-2 py-1 text-sm"
-                  value={formSymbol}
-                  onChange={e => setFormSymbol(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-medium">decimals</label>
-                <input
-                  className="w-full rounded-md border px-2 py-1 text-sm"
-                  value={formDecimals}
-                  onChange={e => setFormDecimals(e.target.value as any)}
-                  required
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-medium">Chain</label>
-                <select
-                    className="w-full rounded-md border px-2 py-1 text-sm"
-                    value={formChainId}
-                    onChange={e => setFormChainId(e.target.value as any)}
-                >
-                    {Object.entries(CHAIN_NAMES).map(([id, label]) => (
-                        <option key={id} value={id}>
-                            {label}
-                        </option>
-                    ))}
-                </select>
-              </div>
-
-              {/* Tags input */}
-              <div className="space-y-1">
-                <label className="text-xs font-medium">Tags</label>
-                <div className="flex gap-2">
-                  <input
-                    className="flex-1 rounded-md border px-2 py-1 text-sm"
-                    placeholder="Type a tag and press Enter or comma…"
-                    value={tagInput}
-                    onChange={e => setTagInput(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === "Enter" || e.key === ",") {
-                        e.preventDefault();
-                        handleAddTagFromInput();
-                      }
-                    }}
-                  />
-                  <button
-                    type="button"
-                    className="rounded-md border px-2 py-1 text-xs"
-                    onClick={handleAddTagFromInput}
-                  >
-                    Add
-                  </button>
-                </div>
-
-                {formTags.length > 0 && (
-                  <div className="mt-1 flex flex-wrap gap-1 text-[10px] text-neutral-700">
-                    {formTags.map(tag => (
-                      <button
-                        key={tag}
-                        type="button"
-                        className="flex items-center gap-1 rounded-full border px-2 py-0.5"
-                        onClick={() => handleRemoveTag(tag)}
-                        title="Click to remove"
-                      >
-                        <span>#{tag}</span>
-                        <span aria-hidden>×</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              
-
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
@@ -342,7 +333,7 @@ export function Folios() {
                   type="submit"
                   className="rounded-md bg-black px-3 py-1 text-xs font-medium text-white"
                 >
-                  {editingCoin ? "Save changes" : "Create coin"}
+                  {editingFolio ? "Save changes" : "Create account"}
                 </button>
               </div>
             </form>

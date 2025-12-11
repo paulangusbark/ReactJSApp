@@ -9,7 +9,7 @@ const CURRENT_FOLIO_SCHEMA_VERSION = 1;
 // Contact schema v1
 export type Wallet = {
   coin: string;  // id from coin listener
-  balance: number;  // balance in wei
+  balance: bigint;  // balance in wei
 };
 
 export type Folio = {
@@ -25,7 +25,11 @@ export type Folio = {
   updatedAt: number;       // ms since epoch
 }
 
-
+export type PortfolioStore = {
+  folioId: string; // folio id
+  coinId: string; // coin id from coin listener
+  walletId: number; // wallet identifier in folio
+}
 
 // --- In-memory subscribers for live updates ---------------------------------
 
