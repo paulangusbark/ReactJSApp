@@ -3,12 +3,10 @@ import { useFolioList } from "../hooks/useFolioList";
 import { PortfolioStore, Folio } from "@/storage/folioStore";
 import { sortPortfolio } from "@/lib/folioSorting";
 import { useCoinList } from "@/hooks/useCoinList";
-import { Coin } from "@/storage/coinStore"; 
-import { useMemo } from "react";
 
 export function Folios() {
   const [query, setQuery] = React.useState("");
-  const [sortMode, setSortMode] = React.useState< "createdDesc" | "addressAsc" | "addressDesc" | "createdAsc" | "chainIdAsc" | "chainIdDesc" | "nameAsc" | "nameDesc" | "coinSymbolAsc" | "coinSymbolDesc" | "coinBalanceAsc" | "coinBalanceDesc" >(
+  const [primarySortMode, setPrimarySortMode] = React.useState< "createdDesc" | "addressAsc" | "addressDesc" | "createdAsc" | "chainIdAsc" | "chainIdDesc" | "nameAsc" | "nameDesc" | "coinSymbolAsc" | "coinSymbolDesc" | "coinBalanceAsc" | "coinBalanceDesc" >(
     "nameAsc"
   );
   const [secondarySortMode, setSecondarySortMode] = React.useState< "createdDesc" | "addressAsc" | "addressDesc" | "createdAsc" | "chainIdAsc" | "chainIdDesc" | "nameAsc" | "nameDesc" | "coinSymbolAsc" | "coinSymbolDesc" | "coinBalanceAsc" | "coinBalanceDesc" >(
@@ -21,20 +19,17 @@ export function Folios() {
 
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [editingFolio, setEditingFolio] = React.useState<Folio | null>(null);
+  const [folioToDelete, setFolioToDelete] = React.useState<string | null>(null);
+
 
   // Form state for modal
   const [formName, setFormName] = React.useState("");
-
-  const EVM_ADDRESS_REGEX = /^0x[0-9a-fA-F]{40}$/;
-  const ENS_REGEX = /^[a-z0-9-]+\.eth$/i;
 
   const CHAIN_NAMES: Record<number, string> = {
     1: "Ethereum",
     11155111: "Sepolia",
     31337: "Local",
   };
-
-  const EVM_STANDARDS = ["NATIVE", "ERC20", "ERC721", "ERC1155", "ERC3643", "ERC7943"];
 
   const {
       coins,
@@ -82,8 +77,8 @@ export function Folios() {
   }, [folios, coins]);
 
   const sortedPortfolio = React.useMemo(() => {
-    return sortPortfolio(mapPortfolio, folios, coins, sortMode);
-  }, [mapPortfolio, folios, coins, sortMode]);
+    return sortPortfolio(mapPortfolio, folios, coins, primarySortMode, secondarySortMode);
+  }, [mapPortfolio, folios, coins, primarySortMode, secondarySortMode]);
 
   function formatBalance(balance: bigint, decimals: number): string {
     if (decimals <= 0) return balance.toString();
@@ -119,6 +114,7 @@ export function Folios() {
   }
 
   function openEditModal(folio: Folio) {
+    setEditingFolio(folio);
     setFormName(folio.name ?? "");
     setIsModalOpen(true);
   }
@@ -171,12 +167,23 @@ export function Folios() {
             value={query}
             onChange={e => setQuery(e.target.value)}
           />
-
           <select
             className="rounded-md border px-2 py-1 text-sm"
-            value={sortMode}
-            onChange={e => setSortMode(e.target.value as any)} // sort by secondary and then primary so need holder
+            value={chainId}
+            onChange={e => setChainId(e.target.value as any)}
           >
+          {Object.entries(CHAIN_NAMES).map(([id, label]) => (
+            <option key={id} value={id}>
+              {label}
+            </option>
+          ))}
+          </select>
+          <select
+            className="rounded-md border px-2 py-1 text-sm"
+            value={primarySortMode}
+            onChange={e => setPrimarySortMode(e.target.value as any)} 
+          >
+            <option disabled>Primary sort</option>
             <option value="nameAsc">Name (A → Z)</option>
             <option value="nameDesc">Name (Z → A)</option>
             <option value="symbolAsc">Symbol (A → Z)</option>
@@ -189,8 +196,9 @@ export function Folios() {
           <select
             className="rounded-md border px-2 py-1 text-sm"
             value={secondarySortMode}
-            onChange={e => setSecondarySortMode(e.target.value as any)}  // sort by secondary and then primary so need holder
+            onChange={e => setSecondarySortMode(e.target.value as any)}  
           >
+            <option disabled>Secondary sort</option>
             <option value="nameAsc">Name (A → Z)</option>
             <option value="nameDesc">Name (Z → A)</option>
             <option value="symbolAsc">Symbol (A → Z)</option>
@@ -224,16 +232,22 @@ export function Folios() {
             <option value="any">Match any</option>
             <option value="all">Match all</option>
           </select>
+          <button
+            className="rounded-md bg-black px-3 py-1 text-xs font-medium text-white"
+            onClick={openAddModal}
+          >
+            Create account
+          </button>
         </div>
       </div>
 
-      {mapPortfolio.length === 0 ? (
+      {sortedPortfolio.length === 0 ? (
         <div className="text-sm text-neutral-500">
-          No accounts created yet. Click &quot;Create Account&quot; to get started.
+          No accounts created yet. Click &quot;Create account&quot; to get started.
         </div>
       ) : (
         <ul className="space-y-2">
-          {mapPortfolio.map(item => {
+          {sortedPortfolio.map(item => {
           // Look up associated folio and coin
           const folio = folios.find(f => f.id === item.folioId);
           const coin = coins.find(c => c.id === item.coinId);
@@ -260,24 +274,21 @@ export function Folios() {
             >
               <div>
                 <div className="flex items-center gap-2">
-                  {/* Folio name */}
+
                   <span className="font-medium">{folioName}</span>
                 </div>
 
-                {/* Coin symbol */}
                 <div className="text-xs text-neutral-500">{coinSymbol}</div>
 
-                {/* Chain name */}
-                <div className="text-xs text-neutral-500">{chainName}</div>
-
-                {/* Wallet balance */}
                 <div className="text-xs text-neutral-500">
                   Balance: {balanceStr} {coinSymbol}
                 </div>
+
+                <div className="text-xs text-neutral-500">{chainName}</div>
+
               </div>
 
               <div className="flex flex-col items-end gap-1 text-xs">
-                {/* Keep these if you still want actions, wired to the folio */}
                 <button
                   className="underline"
                   disabled={!folio}
@@ -287,7 +298,7 @@ export function Folios() {
                 </button>
                 <button
                   className="text-red-600 underline"
-                  onClick={() => deleteFolio(item.folioId)}
+                  onClick={() => setFolioToDelete(item.folioId)}
                 >
                   Remove Account
                 </button>
@@ -340,6 +351,41 @@ export function Folios() {
           </div>
         </div>
       )}
+
+      {/* Modal */}
+      {folioToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-sm rounded-lg bg-white p-4 shadow-lg">
+          <h2 className="text-base font-semibold">Delete account?</h2>
+          <p className="mt-2 text-sm text-neutral-600">
+          This will remove the entire portfolio account and its balances from your list.
+          This action cannot be undone and you could lose access to your assets.
+          </p>
+
+          <div className="mt-4 flex justify-end gap-2">
+            <button
+              className="rounded-md border px-3 py-1 text-sm"
+              onClick={() => setFolioToDelete(null)}
+            >
+              Cancel
+            </button>
+            <button
+              className="rounded-md bg-red-600 px-3 py-1 text-sm text-white"
+              onClick={() => {
+                if (folioToDelete) {
+                  deleteFolio(folioToDelete);
+                }
+                setFolioToDelete(null);
+              }}
+            >
+              Yes, delete account
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+
     </div>
   );
 }
