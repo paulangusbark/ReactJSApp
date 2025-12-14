@@ -1,5 +1,4 @@
 import { get, set } from "idb-keyval";
-import { userInfo } from "os";
 
 // --- Schema versioning -------------------------------------------------------
 
@@ -14,16 +13,12 @@ export type Txn = {
   userOpHash: string;  // userOp hash
   transactionHash: string;  // txn reference
   chainId: number;  // chain identifier
+  addressId: string; // address
+  coinId: string | ""; // coin id (can be "")
+  folioId: string; //folio id
+  walletId: string | ""; // wallet id if applicable
   createdAt: number;       // ms since epoch
   updatedAt: number;       // ms since epoch
-}
-
-export type TransactionStore = {
-  txnId: string; // txn id
-  addressId: string; // address id
-  coinId: string // coin id (use "" if not applicable)
-  folioId: string // folio id
-  walletId: number; // wallet identifier in folio
 }
 
 // --- In-memory subscribers for live updates ---------------------------------
@@ -116,6 +111,10 @@ export async function addTxn(input: {
   userOpHash: string;  // userOp hash
   transactionHash: string;  // txn reference
   chainId: number;  // chain identifier
+  addressId: string; // address
+  coinId: string | ""; // coin id (can be "")
+  folioId: string; //folio id
+  walletId: string | ""; // wallet id if applicable
   createdAt: number;       // ms since epoch
   updatedAt: number;       // ms since epoch
 }): Promise<Txn[]> {
@@ -127,6 +126,10 @@ export async function addTxn(input: {
     chainId: input.chainId,
     userOpHash: input.userOpHash,
     transactionHash: input.transactionHash,
+    addressId: input.addressId,
+    coinId: input.coinId,
+    folioId: input.folioId,
+    walletId: input.walletId,
     createdAt: now,
     updatedAt: now,
   };
@@ -138,7 +141,7 @@ export async function addTxn(input: {
 
 export async function updateTxn(
   id: string,
-  patch: Partial<Omit<Txn, "id" | "createdAt">>
+  patch: Partial<Omit<Txn, "id" | "createdAt" | "userOpHash">>
 ): Promise<Txn[]> {
   const txns = await loadTxnsRaw();
   const now = Date.now();

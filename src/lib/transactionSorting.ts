@@ -1,6 +1,6 @@
 import { Folio } from "../storage/folioStore";
 import { Coin } from "@/storage/coinStore";
-import { Txn, TransactionStore } from "@/storage/transactionStore";
+import { Txn } from "@/storage/transactionStore";
 import { Address } from "@/storage/addressStore";
 
 export type TxnSortMode = "createdDesc" | "addressAsc" | "addressDesc" | "createdAsc" | "chainIdAsc" | "chainIdDesc" | "nameAsc" | "nameDesc" | "coinSymbolAsc" | "coinSymbolDesc" ;
@@ -70,22 +70,21 @@ function compareByMode(
 }
 
 export function sortTransactions(
-  transactionStore: TransactionStore[],
+  txns: Txn[],
   folios: Folio[],
   coins: Coin[],
   addresses: Address[],
-  txns: Txn[],
   primarySortMode: TxnSortMode,
   secondarySortMode: TxnSortMode,
-): TransactionStore[] {
+): Txn[] {
   
-  const copy = [...transactionStore];
+  const copy = [...txns];
 
   // Build lookup maps once
   const folioById = new Map(folios.map(f => [f.id, f]));
   const coinById = new Map(coins.map(c => [c.id, c]));
   const addressesById = new Map(addresses.map(a => [a.id, a]));
-  const txnById = new Map(txns.map(t => [t.id, t]));
+
   
 
   copy.sort((a, b) => {
@@ -93,19 +92,17 @@ export function sortTransactions(
     const folioB = folioById.get(b.folioId);
     const coinA = coinById.get(a.coinId);
     const coinB = coinById.get(b.coinId);
-    const txnA = txnById.get(a.txnId);
-    const txnB = txnById.get(b.txnId);
     const addressA = addressesById.get(a.addressId);
     const addressB = addressesById.get(b.addressId);
 
-    const primary = compareByMode(folioA, folioB, coinA, coinB, txnA, txnB, addressA, addressB, primarySortMode);
+    const primary = compareByMode(folioA, folioB, coinA, coinB, a, b, addressA, addressB, primarySortMode);
     if (primary !== 0) return primary;
 
-    const secondary = compareByMode(folioA, folioB, coinA, coinB, txnA, txnB, addressA, addressB, secondarySortMode);
+    const secondary = compareByMode(folioA, folioB, coinA, coinB, a, b, addressA, addressB, secondarySortMode);
     if (secondary !== 0) return secondary;
 
     // deterministic final fallback
-    return compareString(a.txnId, b.txnId) || (a.walletId - b.walletId);
+    return compareString(a.transactionHash, b.transactionHash);
   });
   
   return copy;
