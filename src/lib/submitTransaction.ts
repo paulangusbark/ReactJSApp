@@ -30,6 +30,72 @@ export interface DomainDetailsResponse { success: boolean; data: { name: string;
 export interface PaymasterRequest { paymaster: `0x${string}`; domain: string; sender: `0x${string}`; flag: number; signature: `0x${string}` }
 export interface CreateFreeAccountRequest { sender: `0x${string}`; domain: string; publicKey: `0x${string}`; salt: `0x${string}`; signature: `0x${string}` }
 
+export function parseBalanceSafe(
+  input: string,
+  decimals: number
+): {
+  ok: true;
+  value: bigint;
+} | {
+  ok: false;
+  error: string;
+} {
+  try {
+    return { ok: true, value: parseBalance(input, decimals) };
+  } catch (err: any) {
+    return {
+      ok: false,
+      error: err?.message ?? "Invalid amount",
+    };
+  }
+}
+
+
+export function parseBalance(
+  input: string,
+  decimals: number
+): bigint {
+  if (decimals < 0) {
+    throw new Error("Invalid decimals");
+  }
+
+  const trimmed = input.trim();
+
+  if (trimmed === "") {
+    throw new Error("Empty input");
+  }
+
+  // Strict decimal format:
+  //  - optional leading -
+  //  - digits
+  //  - optional fractional part
+  const match = trimmed.match(/^(-)?(\d+)(?:\.(\d+))?$/);
+
+  if (!match) {
+    throw new Error("Invalid number format");
+  }
+
+  const [, neg, integerPart, fractionPart = ""] = match;
+
+  if (fractionPart.length > decimals) {
+    throw new Error(`Too many decimal places (max ${decimals})`);
+  }
+
+  const base = 10n;
+  const factor = base ** BigInt(decimals);
+
+  const integer = BigInt(integerPart) * factor;
+
+  const fraction =
+    fractionPart.length === 0
+      ? 0n
+      : BigInt(fractionPart.padEnd(decimals, "0"));
+
+  const value = integer + fraction;
+
+  return neg ? -value : value;
+}
+
 
 // --- HTTP util ---
 const BUNDLER = `http://localhost:8080` as string;

@@ -17,9 +17,9 @@ import { useTx } from "@/lib/submitTransaction";
 import { numberToBytes } from "viem";
 import { Abi, encodeFunctionData, getFunctionSelector, createPublicClient, http } from "viem";
 import { parseAbiArg } from "@/lib/parseAbiArgs";
-import { AbiFunctionFragment, getFunctions, getInputName, extractAbi } from "@/lib/abiTypes";
+import { AbiFunctionFragment, getFunctions, getInputName, extractAbi, erc20Abi, erc721Abi, erc1155Abi } from "@/lib/abiTypes";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { TxStatus } from "@/lib/submitTransaction";
+import { TxStatus, parseBalanceSafe } from "@/lib/submitTransaction";
 
 export function Transactions() {
   const [query, setQuery] = React.useState("");
@@ -182,8 +182,8 @@ export function Transactions() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     var addressId;
-    if (selectContact) {
-        addressId = selectContact.id;
+    if (transferOrTransaction) {
+        addressId = selectContact?.id;
     } else {
         addressId = selectContract?.id;
     }
@@ -219,19 +219,22 @@ export function Transactions() {
     closeModal();
   }
 
-  // Resolve selected contract from prop or store
-  const selectedContract: Contract | undefined = React.useMemo(() => {
-    if (selectContract) {
-      const fromStore = contracts.find((c) => c.id === selectContract.id);
-      if (fromStore) return fromStore;
+  const abi: Abi | null = React.useMemo(() => {
+    if (transferOrTransaction) {
+      switch (selectCoin?.type) {
+        case "ERC20":
+          return erc20Abi;
+        case "ERC721":
+          return erc721Abi;
+        case "ERC1155":
+          return erc1155Abi;
+        default:
+          return erc20Abi;
+      }
+    } else {
+      return extractAbi(selectContract?.metadata);
     }
-    return undefined;
-  }, [selectContract, contracts]);
-
-  const abi: Abi | null = React.useMemo(
-    () => extractAbi(selectedContract?.metadata),
-    [selectedContract]
-  );
+  }, [selectCoin, transferOrTransaction, selectContract]);
 
   const functions = React.useMemo(() => getFunctions(abi), [abi]);
 
@@ -300,8 +303,13 @@ export function Transactions() {
       return;
     }
 
-    if (!selectedContract) {
+    if (!selectContract && !transferOrTransaction) {
       setError("No contract selected");
+      return;
+    }
+
+    if (!selectCoin && transferOrTransaction) {
+      setError("No token selected");
       return;
     }
 
@@ -349,8 +357,13 @@ export function Transactions() {
       return;
     }
 
-    if (!selectedContract) {
+    if (!selectContract && !transferOrTransaction) {
       setError("No contract selected");
+      return;
+    }
+
+    if (!selectCoin && transferOrTransaction) {
+      setError("No token selected");
       return;
     }
 
@@ -376,8 +389,15 @@ export function Transactions() {
         // chain is optional; you can plug your Domain.chain here if you want
       });
 
+      var resultAddress;
+      if (transferOrTransaction) {
+        resultAddress = selectCoin?.address as `0x${string}`;
+      } else {
+        resultAddress = selectContract?.address as `0x${string}`;
+      }
+
       const result = await client.readContract({
-        address: selectedContract.address as `0x${string}`,
+        address: resultAddress,
         abi,
         functionName: selectedFn.name as any,
         args,
@@ -592,7 +612,7 @@ export function Transactions() {
             </select>
           </div>
         ) : (
-          selectedContract && (
+          selectContract && (
             <p className="text-xs text-red-600">
               No valid ABI found for this contract. Ensure you stored the ABI as
               either an array or an object with an <code>abi</code> field.
@@ -667,9 +687,9 @@ export function Transactions() {
         )}
 
         {/* Error */}
-        {error && (
+        {formError && (
           <div className="text-xs text-red-600 border border-red-200 rounded-md p-2">
-            {error}
+            {formError}
           </div>
         )}
       </CardContent>
