@@ -1,7 +1,5 @@
 import * as React from "react";
 import { useTxnList } from "../hooks/useTransactionList";
-import { Txn } from "@/storage/transactionStore";
-import { sortTransactions } from "@/lib/transactionSorting";
 import { Coin } from "@/storage/coinStore";
 import { Contact } from "@/storage/contactStore";
 import { useContacts } from "@/hooks/useContacts";
@@ -14,14 +12,26 @@ import { useDomains } from "@/hooks/useDomains";
 import { useFolioList } from "@/hooks/useFolioList";
 import { useAddressList } from "@/hooks/useAddressList";
 import { useTx } from "@/lib/submitTransaction";
-import { numberToBytes } from "viem";
-import { Abi, encodeFunctionData, getFunctionSelector, createPublicClient, http } from "viem";
+import { Abi, encodeFunctionData, createPublicClient, http } from "viem";
 import { parseAbiArg } from "@/lib/parseAbiArgs";
 import { AbiFunctionFragment, getFunctions, getInputName, extractAbi, erc20Abi, erc721Abi, erc1155Abi, nativeAbi } from "@/lib/abiTypes";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { TxStatus, parseBalanceSafe } from "@/lib/submitTransaction";
+import { TxStatus } from "@/lib/submitTransaction";
 
 export function Transactions() {
+
+  type AddressMode = "manual" | "address" | "coin" | "folio";
+
+  type AddressFieldState = {
+    mode: AddressMode;
+    // when mode === "manual"
+    manual: string;
+    // when mode !== "manual"
+    selectedIndex: number | null; // index into the relevant array
+  };
+
+  const [addressFieldState, setAddressFieldState] = React.useState<Record<string, AddressFieldState>>({});
+
   const [query, setQuery] = React.useState("");
   const [sortMode, setSortMode] = React.useState< "createdDesc" | "addressAsc" | "addressDesc" | "createdAsc" | "chainIdAsc" | "chainIdDesc" | "nameAsc" | "nameDesc" | "coinSymbolAsc" | "coinSymbolDesc"  >(
     "createdDesc"
@@ -51,9 +61,6 @@ export function Transactions() {
   const [formError, setError] = React.useState<string | null>(null);
   const [isReading, setIsReading] = React.useState(false);
 
-
-  // Form state for modal
-  const [formAmount, setFormAmount] = React.useState<number>(0);
 
   const CHAIN_NAMES: Record<number, string> = {
     1: "Ethereum",
@@ -149,7 +156,6 @@ export function Transactions() {
   // --- Modal helpers ---------------------------------------------------------
 
   function resetForm() {
-    setFormAmount(0);
     setSelectCoin(null);
     setSelectContact(null);
     setSelectContract(null);
@@ -179,6 +185,46 @@ export function Transactions() {
     resetForm();
   }
 
+  function getResolvedAddress(key: string): string {
+    const st = addressFieldState[key];
+
+    if (!st) return "";
+
+    if (st.mode === "manual") return (st.manual ?? "").trim();
+  
+    const idx = st.selectedIndex;
+    if (idx == null) return "";
+
+    if (st.mode === "address") {
+      const addrRow = address[idx];
+      if (!addrRow) return "";
+
+      if (addrRow.isContact) {
+        const contact = contacts.find(c => c.id === addrRow.id);
+        if (!contact?.wallets?.length) return "";
+
+        const w = contact.wallets.find(w => w.chainId === selectDomain?.chainId);
+        return (w?.address ?? "").trim();
+      } else {
+        const contract = contracts.find(c => c.id === addrRow.id);
+        return (contract?.address ?? "").trim();
+      }
+    }
+    if (st.mode === "coin") return (coins[idx]?.address ?? "").trim();
+    if (st.mode === "folio") return (folios[idx]?.address ?? "").trim();
+
+    return "";
+  }
+
+  function ensureAddressField(key: string) {
+    // lazily initialize to avoid needing effects
+    if (addressFieldState[key]) return;
+    setAddressFieldState((prev) => ({
+      ...prev,
+      [key]: { mode: "manual", manual: "", selectedIndex: null },
+    }));
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     var addressId;
@@ -187,7 +233,7 @@ export function Transactions() {
     } else {
         addressId = selectContract?.id;
     }
-    // logic to build, sign and send user op can be inserted here
+    // logic to build, sign and send user op can be inserted here (selector and calldata are ready since this is called from another function)
     // response includes the userOphash and transactionHash
 
     const wallet = selectFolio?.wallet;
@@ -250,8 +296,8 @@ export function Transactions() {
           }
         }
       }
-      return balance;
-    } else return 0n;
+      return formatBalance(balance, selectCoin.decimals);
+    } else return "";
 
   }, [selectCoin, selectFolio])
 
@@ -307,12 +353,19 @@ export function Transactions() {
 
   function buildArgs() {
     if (!selectedFn) return [];
+
     return selectedFn.inputs.map((input, index) => {
       const key = getInputName(input, index);
+
+      if (input.type === "address") {
+        return getResolvedAddress(key);
+      }
+
       const raw = argValues[key] ?? "";
       return parseAbiArg(input.type, raw);
     });
   }
+
 
   async function handleBuildCalldata(e: React.FormEvent) {
     e.preventDefault();
@@ -407,7 +460,6 @@ export function Transactions() {
 
       const client = createPublicClient({
         transport: http(selectDomain?.rpcUrl),
-        // chain is optional; you can plug your Domain.chain here if you want
       });
 
       var resultAddress;
@@ -543,7 +595,7 @@ export function Transactions() {
 
                 <div className="flex items-center gap-2 text-xs">
                 <button
-                  className="underline"
+                  className="underline" // need to replace url with domain value (transactionUrl)
                   onClick={() => {
                     if (item.transactionHash) {
                       window.open(`https://sepolia.etherscan.io/tx/${item.transactionHash}`, "_blank", "noopener,noreferrer");
@@ -573,17 +625,17 @@ export function Transactions() {
           <label className="text-xs font-medium">Folio</label>
           <select
             className="w-full rounded-md border px-2 py-1 text-sm"
-            value={selectContract?.name}
-            onChange={(e) => setSelectContract(e.target.value as any)}
+            value={selectFolio?.name}
+            onChange={(e) => setSelectFolio(e.target.value as any)}
           >
-            <option value="">{crLoading ? "Loading..." : "Select folio"}</option>
+            <option value="">{fLoading ? "Loading..." : "Select folio"}</option>
             {folios.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name} ({c.address})
               </option>
             ))}
           </select>
-          {crError && (
+          {fError && (
             <p className="text-xs text-red-600 mt-1">Error: {fError}</p>
           )}
         </div>
@@ -625,15 +677,11 @@ export function Transactions() {
           )}
         </div>)}
 
-        {/* Selected contract summary */}
-        {selectContract && (
+        {/* Selected coin balance*/}
+        {transferOrTransaction && selectCoin && (
           <div className="text-xs text-gray-600 space-y-1">
             <div>
-              <span className="font-medium">Selected:</span> {selectContract.name}
-            </div>
-            <div>
-              <span className="font-medium">Address:</span>{" "}
-              <code>{selectContract.address}</code>
+              <span className="font-medium">Balance:</span> {coinBalance} {selectCoin.symbol}
             </div>
           </div>
         )}
@@ -680,70 +728,113 @@ export function Transactions() {
         )}
 
         {/* Dynamic inputs */}
-        {selectedFn && (
-          <form onSubmit={handleBuildCalldata} className="space-y-3 border rounded-md p-3">
-            <div className="text-xs font-semibold mb-1">
-              Inputs for <code>{selectedFn.name}</code>{" "}
-              <span className="text-gray-500">({selectedFn.stateMutability})</span>
-            </div>
+        {selectedFn?.inputs.map((input, index) => {
+          const key = getInputName(input, index);
 
-            {selectedFn.inputs.length === 0 && (
-              <div className="text-xs text-gray-500">No inputs</div>
-            )}
+          // Special UI for address inputs
+          if (input.type === "address") {
+            // ensure it exists (one-time)
+            if (!addressFieldState[key]) ensureAddressField(key);
 
-            {selectedFn.inputs.map((input, index) => {
-              const key = getInputName(input, index);
-              return (
-                <div key={key} className="space-y-1">
-                  <label className="text-xs font-medium">
-                    {key} <span className="text-gray-500">({input.type})</span>
-                  </label>
-                  <input
+            const st = addressFieldState[key] ?? { mode: "manual", manual: "", selectedIndex: null };
+
+            const list =
+              st.mode === "address" ? address :
+              st.mode === "coin" ? coins :
+              st.mode === "folio" ? folios :
+              [];
+
+            const resolved = getResolvedAddress(key);
+
+            return (
+              <div key={key} className="space-y-1">
+                <label className="text-xs font-medium">
+                  {key} <span className="text-gray-500">(address)</span>
+                </label>
+
+                {/* selector: manual/address/coin/folio */}
+                <select
                     className="w-full rounded-md border px-2 py-1 text-sm"
-                    value={argValues[key] ?? ""}
-                    onChange={(e) => handleArgChange(key, e.target.value)}
-                    placeholder={
-                      input.type.endsWith("[]")
-                        ? `JSON array for ${input.type}`
-                        : input.type === "bool"
-                        ? "true / false"
-                        : ""
-                    }
-                  />
+                    value={st.mode}
+                    onChange={(e) => {
+                      const mode = e.target.value as AddressMode;
+                      setAddressFieldState((prev) => ({
+                        ...prev,
+                        [key]: { mode, manual: "", selectedIndex: null },
+                      }));
+                    }}
+                >
+                 <option value="manual">Manual</option>
+                  <option value="address">Address</option>
+                  <option value="coin">Coin</option>
+                  <option value="folio">Folio</option>
+                </select>
+
+                {/* second control */}
+                {st.mode === "manual" ? (
+                <input
+                  className="w-full rounded-md border px-2 py-1 text-sm"
+                  value={st.manual}
+                  onChange={(e) => {
+                    const manual = e.target.value;
+                    setAddressFieldState((prev) => ({
+                      ...prev,
+                      [key]: { ...st, manual },
+                    }));
+                  }}
+                  placeholder="0x…"
+                />
+                ) : (
+                <select
+                  className="w-full rounded-md border px-2 py-1 text-sm"
+                  value={st.selectedIndex ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setAddressFieldState((prev) => ({
+                      ...prev,
+                      [key]: { ...st, selectedIndex: v === "" ? null : Number(v) },
+                    }));
+                  }}
+                >
+                  <option value="">Select {st.mode}</option>
+                  {list.map((item: any, i: number) => (
+                    <option key={`${key}-${i}`} value={i}>
+                      {item.name}
+                    </option>
+                  ))}
+                </select>
+                )}
+
+                {/* resolved preview */}
+                <div className="text-[11px] text-gray-500 break-all">
+                  Resolved: <code>{resolved || "—"}</code>
                 </div>
-              );
-            })}
+              </div>
+            );
+          }
 
-            <div className="flex flex-wrap gap-2">
-              {/* Always show: building calldata is valid for read & write */}
-              <button
-                type="submit"
-                className="px-3 py-1 text-sm rounded-md border bg-gray-100 hover:bg-gray-200"
-              >
-                Submit
-              </button>
-
-              {/* Only show for read-only: can actually call via RPC */}
-              {isReadOnly && (
-                <button
-                  type="button"
-                  onClick={handleReadCall}
-                  disabled={isReading}
-                  className="px-3 py-1 text-sm rounded-md border bg-blue-100 hover:bg-blue-200 disabled:opacity-50"
-                >
-                  {isReading ? "Reading…" : "Call read-only function"}
-                </button>
-              )}
-              <button
-                  type="button"
-                  className="px-3 py-1 text-sm rounded-md border bg-gray-100 hover:bg-gray-200"
-                  onClick={closeModal}
-                >
-                  Cancel
-                </button>
+          // Default UI for non-address inputs
+          return (
+            <div key={key} className="space-y-1">
+              <label className="text-xs font-medium">
+                {key} <span className="text-gray-500">({input.type})</span>
+              </label>
+              <input
+                className="w-full rounded-md border px-2 py-1 text-sm"
+                value={argValues[key] ?? ""}
+                onChange={(e) => handleArgChange(key, e.target.value)}
+                placeholder={
+                  input.type.endsWith("[]")
+                  ? `JSON array for ${input.type}`
+                  : input.type === "bool"
+                  ? "true / false"
+                  : ""
+                }
+              />
             </div>
-          </form>
-        )}
+          );
+        })}
+
 
         {/* Error */}
         {formError && (
@@ -753,36 +844,6 @@ export function Transactions() {
         )}
       </CardContent>
 
-      <CardFooter className="flex flex-col gap-3">
-        {selector && (
-          <div className="w-full space-y-1">
-            <div className="text-xs font-semibold">Function selector (4 bytes)</div>
-            <pre className="bg-gray-50 text-[10px] p-2 rounded-md break-all">
-              {selector}
-            </pre>
-          </div>
-        )}
-
-        {calldata && (
-          <div className="w-full space-y-1">
-            <div className="text-xs font-semibold">
-              Calldata (pass this into your userOp builder)
-            </div>
-            <pre className="bg-gray-50 text-[10px] p-2 rounded-md break-all">
-              {calldata}
-            </pre>
-          </div>
-        )}
-
-        {readResult && (
-          <div className="w-full space-y-1">
-            <div className="text-xs font-semibold">Read result</div>
-            <pre className="bg-gray-50 text-[10px] p-2 rounded-md break-all">
-              {readResult}
-            </pre>
-          </div>
-        )}
-      </CardFooter>
     </Card>
       )}
 
