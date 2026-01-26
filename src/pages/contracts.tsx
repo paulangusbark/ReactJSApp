@@ -78,7 +78,7 @@ export function Contracts() {
       const map: Record<string, Address> = {};
       address.forEach(a => { map[a.id] = a });
       return map;
-      }, address
+      }, [address]
     );
 
   function resetForm() {
