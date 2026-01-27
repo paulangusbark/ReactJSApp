@@ -67,6 +67,7 @@ body {
   margin: 0;
   background: hsl(var(--bg));
   color: hsl(var(--fg));
+  font-family: Inter, system-ui, sans-serif;
 }
 
 /* ================================

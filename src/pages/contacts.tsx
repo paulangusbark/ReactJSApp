@@ -24,6 +24,7 @@ export function Contacts() {
   const [formTags, setFormTags] = React.useState<string[]>([]);
   const [tagInput, setTagInput] = React.useState("");
   const [formWallets, setFormWallets] = React.useState<Wallet[]>([]);
+  const [contactToDelete, setContactToDelete] = React.useState<string | null>(null);
 
   const EVM_ADDRESS_REGEX = /^0x[0-9a-fA-F]{40}$/;
   const ENS_REGEX = /^[a-z0-9-]+\.eth$/i;
@@ -163,24 +164,16 @@ export function Contacts() {
     setFormTags(prev => prev.filter(t => t !== tag));
   }
 
-  function handleWalletChange(index: number, field: keyof Wallet, value: string) {
+  function handleWalletChange(index: number, field: keyof Wallet, value: string | number) {
     setFormWallets(prev => {
-
-      if (field === "address") {
-        const trimmed = value.trim();
-        // Allow empty value while editing; only block non-empty invalid ones
-        if (trimmed !== "" && !EVM_ADDRESS_REGEX.test(trimmed) && !ENS_REGEX.test(trimmed)) {
-          // Invalid address → do not update state
-          return prev;
-        }
-      }
 
       const next = [...prev];
       const w = { ...next[index] };
       if (field === "chainId") {
-        w.chainId = Number(value) || 0;
+        const n = typeof value === "number" ? value : Number(value);
+        if (Number.isFinite(n)) w.chainId = n;
       } else {
-        w.address = value;
+        w.address = String(value);
       }
       next[index] = w;
       return next;
@@ -188,7 +181,7 @@ export function Contacts() {
   }
 
   function handleAddWalletRow() {
-    setFormWallets(prev => [...prev, { chainId: 0, address: "" }]);
+    setFormWallets(prev => [...prev, { chainId: 1, address: "" }]);
   }
 
   function handleRemoveWalletRow(index: number) {
@@ -198,6 +191,17 @@ export function Contacts() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
+    const wallets = formWallets
+      .map(w => ({ ...w, address: w.address.trim() }))
+      .filter(w => w.address !== "");
+
+    for (const w of wallets) {
+      if (!EVM_ADDRESS_REGEX.test(w.address) && !ENS_REGEX.test(w.address)) {
+        alert(`Invalid wallet address: ${w.address}`);
+        return;
+      }
+    }
+
     const trimmedName = formName.trim();
     if (!trimmedName) return; // you can show a validation message if you like
 
@@ -205,7 +209,7 @@ export function Contacts() {
       name: trimmedName,
       surname: formSurname.trim() || undefined,
       tags: formTags.length > 0 ? formTags : undefined,
-      wallets: formWallets.filter(w => w.address.trim()), // only keep non-empty addresses
+      wallets: formWallets.filter(w => w.address.trim()).filter(w => w.chainId > 0), // only keep non-empty addresses
     };
 
     if (editingContact) {
@@ -287,7 +291,7 @@ export function Contacts() {
 
 
       {contacts.length === 0 ? (
-        <div className="text-sm text-neutral-500">
+        <div className="text-sm text-muted">
           No contacts yet. Add one from the transaction screen or here.
         </div>
       ) : (
@@ -302,23 +306,23 @@ export function Contacts() {
                 <div className="font-medium">{c.name}</div>
               </div>
               <div className="min-w-0">
-                <div className="text-xs text-neutral-500">{c.surname}</div>
+                <div className="text-xs text-muted">{c.surname}</div>
               </div>
 
               {/* Wallets + tags */}
               <div className="min-w-0">
                 {(c as any).wallets?.length > 0 && (
-                  <div className="space-y-1 text-[11px] text-neutral-600">
+                  <div className="space-y-1 text-[11px] text-muted">
                     {(c as any).wallets.map((w: Wallet, idx: number) => (
                       <div key={idx} className="font-mono break-all">
-                        {w.chainId}: {w.address}
+                        {CHAIN_NAMES[w.chainId] ?? w.chainId}: {w.address}
                       </div>
                     ))}
                   </div>
                 )}
 
                 {c.tags && c.tags?.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-10 text-[11px] text-neutral-600">
+                  <div className="mt-2 flex flex-wrap gap-10 text-[11px] text-muted">
                     {c.tags.map(tag => (
                       <span key={tag} className="px-10 py-0.5">
                         #{tag}
@@ -331,13 +335,13 @@ export function Contacts() {
               {/* Actions column */}
               <div className="justify-self-start overflow-visible">
                 <details className="relative inline-block overflow-visible">
-                  <summary className="cursor-pointer list-none rounded-md border bg-white px-2 py-1 text-xs">
+                  <summary className="cursor-pointer list-none rounded-md border bg-background px-2 py-1 text-xs">
                     Actions
                   </summary>
 
-                  <div style={{ backgroundColor: "white" }} className="absolute left-0 mt-1 w-40 rounded-md border border-neutral-200 bg-white shadow-lg z-50">
+                  <div className="absolute left-0 mt-1 w-40 rounded-md border border-neutral-200 bg-background shadow-lg z-50">
                     <button
-                      className="block w-full px-3 py-2 text-left text-xs hover:bg-neutral-50"
+                      className="block w-full px-3 py-2 text-left text-xs hover:bg-muted"
                       onClick={(e) => {
                         (e.currentTarget.closest("details") as HTMLDetailsElement)?.removeAttribute("open");
                         openEditModal(c);
@@ -347,7 +351,7 @@ export function Contacts() {
                     </button>
 
                     <button
-                      className="block w-full px-3 py-2 text-left text-xs hover:bg-neutral-50"
+                      className="block w-full px-3 py-2 text-left text-xs hover:bg-muted"
                       onClick={(e) => {
                         (e.currentTarget.closest("details") as HTMLDetailsElement)?.removeAttribute("open");
                         updateAddressFromContact(c, !(addressMap[c.id]?.isVisible ?? true));
@@ -358,11 +362,10 @@ export function Contacts() {
                     <div className="my-1 border-t" />
 
                     <button
-                      className="block w-full px-3 py-2 text-left text-xs text-red-600 hover:bg-neutral-50"
+                      className="block w-full px-3 py-2 text-left text-xs text-red-600 hover:bg-muted"
                       onClick={(e) => {
                         (e.currentTarget.closest("details") as HTMLDetailsElement)?.removeAttribute("open");
-                        deleteContact(c.id);
-                        storeDeleteAddress(c.id);
+                        setContactToDelete(c.id);
                       }}
                     >
                       Remove
@@ -379,24 +382,23 @@ export function Contacts() {
       {/* Modal */}
       {isModalOpen ? createPortal(
         <div
+          className="bg-background/80 backdrop-blur-sm"
           onMouseDown={closeModal}
           style={{
             position: "fixed",
             inset: 0,
             zIndex: 2147483647,
-            background: "rgba(0,0,0,0.85)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             padding: 16,
           }}
         >
-          <div
+          <div className="bg-background"
             onMouseDown={(e) => e.stopPropagation()}
             style={{
               width: "100%",
               maxWidth: 448,
-              background: "white",
               borderRadius: 12,
               padding: 16,
               boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
@@ -452,7 +454,7 @@ export function Contacts() {
                 </div>
 
                 {formTags.length > 0 && (
-                  <div className="mt-1 flex flex-wrap gap-1 text-[10px] text-neutral-700">
+                  <div className="mt-1 flex flex-wrap gap-1 text-[10px] text-muted">
                     {formTags.map(tag => (
                       <button
                         key={tag}
@@ -474,7 +476,7 @@ export function Contacts() {
                 <label className="text-xs font-medium">Wallets</label>
 
                 {formWallets.length === 0 && (
-                  <div className="text-[11px] text-neutral-500">
+                  <div className="text-[11px] text-muted">
                     No wallets yet.
                   </div>
                 )}
@@ -488,7 +490,7 @@ export function Contacts() {
                       <select
                         className="w-20 rounded-md border px-1 py-0.5 text-xs"
                         value={w.chainId}
-                        onChange={e => handleWalletChange(idx, "chainId", e.target.value)}
+                        onChange={e => handleWalletChange(idx, "chainId", Number(e.target.value))}
                       >
                         {Object.entries(CHAIN_NAMES).map(([id, label]) => (
                           <option key={id} value={id}>
@@ -534,7 +536,7 @@ export function Contacts() {
                 </button>
                 <button
                   type="submit"
-                  className="rounded-md bg-black px-3 py-1 text-xs font-medium text-white"
+                  className="rounded-md bg-primary px-3 py-1 text-xs font-medium text-background"
                 >
                   {editingContact ? "Save changes" : "Create contact"}
                 </button>
@@ -544,6 +546,63 @@ export function Contacts() {
         </div>,
         document.body
       ) : null}
+
+      {/* Modal */}
+      {contactToDelete ? createPortal (
+        <div
+          className="bg-background/80 backdrop-blur-sm"
+          onMouseDown={closeModal}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 2147483647,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+          }}
+        >
+          <div className="bg-background"
+            onMouseDown={(e) => e.stopPropagation()}
+            style={{
+              width: "100%",
+              maxWidth: 448,
+              borderRadius: 12,
+              padding: 16,
+              boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
+            }}
+          >
+          <h2 className="text-base font-semibold">Delete account?</h2>
+          <p className="mt-2 text-sm text-muted">
+          This will delete the contact and remove it from your address book. This action cannot be undone.
+          </p>
+
+          <div className="mt-4 flex justify-end gap-2">
+            <button
+              className="rounded-md border px-3 py-1 text-sm"
+              onClick={() => setContactToDelete(null)}
+            >
+              Cancel
+            </button>
+            <button
+              className="rounded-md bg-primary px-3 py-1 text-sm text-background"
+              onClick={() => {
+                if (contactToDelete) {
+                  deleteContact(contactToDelete);
+                  storeDeleteAddress(contactToDelete);
+                }
+                setContactToDelete(null);
+              }}
+            >
+              Yes, delete account
+            </button>
+          </div>
+        </div>
+      </div>,
+      document.body
+      ) : null
+    }
+
     </div>
   );
 }
