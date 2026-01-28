@@ -15,7 +15,6 @@ import { useTx } from "@/lib/submitTransaction";
 import { Abi, encodeFunctionData, createPublicClient, http } from "viem";
 import { parseAbiArg } from "@/lib/parseAbiArgs";
 import { AbiFunctionFragment, getFunctions, getInputName, extractAbi, erc20Abi, erc721Abi, erc1155Abi, nativeAbi } from "@/lib/abiTypes";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { TxStatus } from "@/lib/submitTransaction";
 import { createPortal } from "react-dom";
 
@@ -153,6 +152,8 @@ export function Transactions() {
 
     return negative ? "-" + result : result;
   }
+
+
 
   // --- Modal helpers ---------------------------------------------------------
 
@@ -420,6 +421,8 @@ export function Transactions() {
       return;
     }
 
+    if (isReading) return;
+
     try {
       setIsReading(true);
       const args = buildArgs();
@@ -483,6 +486,8 @@ export function Transactions() {
       return;
     }
 
+    if (isReading) return;
+
     try {
       setIsReading(true);
       const args = buildArgs();
@@ -529,53 +534,59 @@ export function Transactions() {
         Transactions
       </h1>
 
-      <div className="flex flex-1 min-w-0 flex-nowrap items-center gap-2 sm:justify-end sm:mt-1">
+      <div className="flex flex-col gap-2">
         <input
-          className="h-9 min-w-[160px] max-w-[260px] flex-[1_1_220px] rounded-md border border-border bg-card px-2 text-sm text-foreground placeholder:text-muted"
+          className="h-9 w-full rounded-md border border-border bg-card px-2 text-sm text-foreground placeholder:text-muted sm:max-w-md"
           placeholder="Search by userOpHash or transactionHash…"
           value={query}
           onChange={e => setQuery(e.target.value)}
         />
-        <select
-          className="h-9 w-[100px] rounded-md border border-border bg-card px-2 text-sm text-foreground"
-          value={chainId}
-          onChange={e => setChainId(e.target.value as any)}
-        >
-          {Object.entries(CHAIN_NAMES).map(([id, label]) => (
-            <option key={id} value={id}>
-              {label}
-            </option>
-          ))}
-        </select>
-        <select
-          className="h-9 w-[140px] rounded-md border border-border bg-card px-2 text-sm text-foreground"
-          value={sortMode}
-          onChange={e => setSortMode(e.target.value as any)}
-        >
-          <option disabled>Primary sort</option>
-          <option value="nameAsc">Name (A → Z)</option>
-          <option value="nameDesc">Name (Z → A)</option>
-          <option value="coinSymbolAsc">Symbol (A → Z)</option>
-          <option value="coinSymbolDesc">Symbol (Z → A)</option>
-          <option value="addressAsc">Address (A → Z)</option>
-          <option value="addressDesc">Address (Z → A)</option>
-          <option value="chainIdAsc">Chain ID (Low → High)</option>
-          <option value="chainIdDesc">Chain ID (High → Low)</option>
-          <option value="createdDesc">Newest first</option>
-          <option value="createdAsc">Oldest first</option>
-        </select>
-        <button
-          className="h-9 whitespace-nowrap rounded-md bg-bg px-3 text-sm font-medium text-primary hover:opacity-90"
-          onClick={openTransferModal}
-        >
-          Send coins
-        </button>
-        <button
-          className="h-9 whitespace-nowrap rounded-md bg-bg px-3 text-sm font-medium text-primary hover:opacity-90"
-          onClick={openContractTransaction}
-        >
-          Use a smart contract
-        </button>
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <select
+            className="h-9 w-[100px] rounded-md border border-border bg-card px-2 text-sm text-foreground"
+            value={chainId}
+            onChange={e => setChainId(e.target.value as any)}
+          >
+            {Object.entries(CHAIN_NAMES).map(([id, label]) => (
+              <option key={id} value={id}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <select
+            className="h-9 w-[140px] rounded-md border border-border bg-card px-2 text-sm text-foreground"
+            value={sortMode}
+            onChange={e => setSortMode(e.target.value as any)}
+          >
+            <option disabled>Primary sort</option>
+            <option value="nameAsc">Name (A → Z)</option>
+            <option value="nameDesc">Name (Z → A)</option>
+            <option value="coinSymbolAsc">Symbol (A → Z)</option>
+            <option value="coinSymbolDesc">Symbol (Z → A)</option>
+            <option value="addressAsc">Address (A → Z)</option>
+            <option value="addressDesc">Address (Z → A)</option>
+            <option value="chainIdAsc">Chain ID (Low → High)</option>
+            <option value="chainIdDesc">Chain ID (High → Low)</option>
+            <option value="createdDesc">Newest first</option>
+            <option value="createdAsc">Oldest first</option>
+          </select>
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <button
+            className="h-9 rounded-md border border-border bg-card px-3 text-sm"
+            onClick={openTransferModal}
+          >
+            &nbsp;Send coins&nbsp;
+          </button>&nbsp;
+          <button
+            className="h-9 rounded-md border border-border bg-card px-3 text-sm"
+            onClick={openContractTransaction}
+          >
+            &nbsp;Use a smart contract&nbsp;
+          </button>
+        </div>
       </div>
 
       {txns.length === 0 ? (
@@ -604,25 +615,39 @@ export function Transactions() {
             return (
               <li
                 key={`${item.folioId}-${item.coinId}-${item.walletId}`}
-                className="grid grid-cols-[80px_80px_80px_80px_80px_80px_110px] items-start gap-x-6 gap-y-2 rounded-lg border px-8 py-3 text-sm overflow-visible"
+                className="
+    grid gap-x-6 gap-y-2 rounded-lg border px-4 py-3 text-sm
+    grid-cols-1
+    sm:grid-cols-[80px_80px_1fr_110px] sm:items-start sm:px-8
+  "
               >
 
-                <div className="flex items-center gap-2">
+                <div className="min-w-0">
 
                   <span className="font-medium">Sender: {folioName}</span>
                 </div>
+                <div className="min-w-0">
 
-                <div className="text-xs text-muted">Coin: {coinSymbol}</div>
+                  <div className="text-xs text-muted">Coin: {coinSymbol}</div>
+                </div>
+                <div className="min-w-0">
 
-                <div className="text-xs text-muted">Chain: {chainName}</div>
+                  <div className="text-xs text-muted">Chain: {chainName}</div>
+                </div>
+                <div className="min-w-0">
 
-                <div className="text-xs text-muted">Receiver: {addressName}</div>
+                  <div className="text-xs text-muted">Receiver: {addressName}</div>
+                </div>
+                <div className="min-w-0">
 
-                <div className="text-xs text-muted">Transaction: {item.transactionHash}</div>
+                  <div className="text-xs text-muted">Transaction: {item.transactionHash}</div>
+                </div>
+                <div className="min-w-0">
 
-                <div className="text-xs text-muted">UserOphash: {item.userOpHash}</div>
+                  <div className="text-xs text-muted">UserOphash: {item.userOpHash}</div>
+                </div>
 
-                <div className="flex items-center gap-2 text-xs">
+                <div className="justify-self-start sm:justify-self-end overflow-visible">
                   <button
                     className="underline" // need to replace url with domain value (transactionUrl)
                     onClick={() => {
@@ -644,7 +669,9 @@ export function Transactions() {
       {isModalOpen ? createPortal(
         <div
           className="bg-background/80 backdrop-blur-sm"
-          onMouseDown={closeModal}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeModal();
+          }}
           style={{
             position: "fixed",
             inset: 0,
@@ -672,7 +699,9 @@ export function Transactions() {
               {cardDescription}
             </h3>
             <div className="space-y-1">
-              <label className="text-xs font-medium">Folio</label>
+              <div className="min-w-0">
+                <label className="text-xs font-medium">Folio</label>
+              </div>
               <select
                 className="w-full rounded-md border px-2 py-1 text-sm"
                 value={selectFolio?.name}
@@ -691,7 +720,9 @@ export function Transactions() {
             </div>
             {/* Contract selector */}
             {!transferOrTransaction && (<div className="space-y-1">
-              <label className="text-xs font-medium">Contract</label>
+              <div className="min-w-0">
+                <label className="text-xs font-medium">Contract</label>
+              </div>
               <select
                 className="h-9 w-[110px] rounded-md border border-border bg-card px-2 text-sm text-foreground"
                 value={selectContract?.name}
@@ -709,7 +740,9 @@ export function Transactions() {
               )}
             </div>)}
             {transferOrTransaction && (<div className="space-y-1">
-              <label className="text-xs font-medium">Coin</label>
+              <div className="min-w-0">
+                <label className="text-xs font-medium">Coin</label>
+              </div>
               <select
                 className="h-9 w-[110px] rounded-md border border-border bg-card px-2 text-sm text-foreground"
                 value={selectCoin?.name}
@@ -739,7 +772,9 @@ export function Transactions() {
             {/* Function selector */}
             {hasAbi ? (
               <div className="space-y-1">
-                <label className="text-xs font-medium">Function</label>
+                <div className="min-w-0">
+                  <label className="text-xs font-medium">Function</label>
+                </div>
                 <select
                   className="h-9 w-[110px] rounded-md border border-border bg-card px-2 text-sm text-foreground"
                   value={selectedFnName}
@@ -798,67 +833,69 @@ export function Transactions() {
 
                 return (
                   <div key={key} className="space-y-1">
-                    <label className="text-xs font-medium">
-                      {key} <span className="text-muted">(address)</span>
-                    </label>
+                    <div className="min-w-0">
+                      <label className="text-xs font-medium">
+                        {key} <span className="text-muted">(address)</span>
+                      </label>
+                    </div>
 
                     {/* selector: manual/address/coin/folio */}
-                    <select
-                      className="h-9 w-[110px] rounded-md border border-border bg-card px-2 text-sm text-foreground"
-                      value={st.mode}
-                      onChange={(e) => {
-                        const mode = e.target.value as AddressMode;
-                        setAddressFieldState((prev) => ({
-                          ...prev,
-                          [key]: { mode, manual: "", selectedIndex: null },
-                        }));
-                      }}
-                    >
-                      <option value="manual">Manual</option>
-                      <option value="address">Address</option>
-                      <option value="coin">Coin</option>
-                      <option value="folio">Folio</option>
-                    </select>
-
-                    {/* second control */}
-                    {st.mode === "manual" ? (
-                      <input
-                        className="h-9 w-[110px] rounded-md border border-border bg-card px-2 text-sm text-foreground"
-                        value={st.manual}
-                        onChange={(e) => {
-                          const manual = e.target.value;
-                          setAddressFieldState((prev) => ({
-                            ...prev,
-                            [key]: { ...st, manual },
-                          }));
-                        }}
-                        placeholder="0x…"
-                      />
-                    ) : (
+                    <div className="min-w-0">
                       <select
                         className="h-9 w-[110px] rounded-md border border-border bg-card px-2 text-sm text-foreground"
-                        value={st.selectedIndex ?? ""}
+                        value={st.mode}
                         onChange={(e) => {
-                          const v = e.target.value;
+                          const mode = e.target.value as AddressMode;
                           setAddressFieldState((prev) => ({
                             ...prev,
-                            [key]: { ...st, selectedIndex: v === "" ? null : Number(v) },
+                            [key]: { mode, manual: "", selectedIndex: null },
                           }));
                         }}
                       >
-                        <option value="">Select {st.mode}</option>
-                        {list.map((item: any, i: number) => (
-                          <option key={`${key}-${i}`} value={i}>
-                            {item.name}
-                          </option>
-                        ))}
+                        <option value="manual">Manual</option>
+                        <option value="address">Address</option>
+                        <option value="coin">Coin</option>
+                        <option value="folio">Folio</option>
                       </select>
-                    )}
-
-                    {/* resolved preview */}
-                    <div className="text-[11px] text-muted break-all">
-                      Resolved: <code>{resolved || "—"}</code>
                     </div>
+
+                    {/* second control */}
+                    <div className="min-w-0">
+                      {st.mode === "manual" ? (
+                        <input
+                          className="h-9 w-[110px] rounded-md border border-border bg-card px-2 text-sm text-foreground"
+                          value={st.manual}
+                          onChange={(e) => {
+                            const manual = e.target.value;
+                            setAddressFieldState((prev) => ({
+                              ...prev,
+                              [key]: { ...st, manual },
+                            }));
+                          }}
+                          placeholder="0x…"
+                        />
+                      ) : (
+                        <select
+                          className="h-9 w-[180px] rounded-md border border-border bg-card px-2 text-sm text-foreground"
+                          value={st.selectedIndex ?? ""}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setAddressFieldState((prev) => ({
+                              ...prev,
+                              [key]: { ...st, selectedIndex: v === "" ? null : Number(v) },
+                            }));
+                          }}
+                        >
+                          <option value="">Select {st.mode}</option>
+                          {list.map((item: any, i: number) => (
+                            <option key={`${key}-${i}`} value={i}>
+                              {item.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+
                   </div>
                 );
               }
@@ -866,21 +903,25 @@ export function Transactions() {
               // Default UI for non-address inputs
               return (
                 <div key={key} className="space-y-1">
-                  <label className="text-xs font-medium">
-                    {key} <span className="text-muted">({input.type})</span>
-                  </label>
-                  <input
-                    className="h-9 w-[110px] rounded-md border border-border bg-card px-2 text-sm text-foreground"
-                    value={argValues[key] ?? ""}
-                    onChange={(e) => handleArgChange(key, e.target.value)}
-                    placeholder={
-                      input.type.endsWith("[]")
-                        ? `JSON array for ${input.type}`
-                        : input.type === "bool"
-                          ? "true / false"
-                          : ""
-                    }
-                  />
+                  <div className="min-w-0">
+                    <label className="text-xs font-medium">
+                      {key} <span className="text-muted">({input.type})</span>
+                    </label>
+                  </div>
+                  <div className="min-w-0">
+                    <input
+                      className="h-9 w-[110px] rounded-md border border-border bg-card px-2 text-sm text-foreground"
+                      value={argValues[key] ?? ""}
+                      onChange={(e) => handleArgChange(key, e.target.value)}
+                      placeholder={
+                        input.type.endsWith("[]")
+                          ? `JSON array for ${input.type}`
+                          : input.type === "bool"
+                            ? "true / false"
+                            : ""
+                      }
+                    />
+                  </div>
                 </div>
               );
             })}
@@ -891,14 +932,14 @@ export function Transactions() {
                 className="rounded-md border px-3 py-1 text-xs"
                 onClick={closeModal}
               >
-                Cancel
-              </button>
+                &nbsp;Cancel&nbsp;
+              </button>&nbsp;
               {isReadOnly ? (<button
                 type="button"
                 className="rounded-md border px-3 py-1 text-xs"
                 onClick={handleReadCall}
               >
-                Query
+                &nbsp;Query&nbsp;
               </button>
               ) : (
                 <button
@@ -906,7 +947,7 @@ export function Transactions() {
                   className="rounded-md bg-primary px-3 py-1 text-xs font-medium text-background"
                   onClick={handleBuildCalldata}
                 >
-                  Submit
+                  &nbsp;Submit&nbsp;
                 </button>
               )}
             </div>

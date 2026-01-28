@@ -128,7 +128,7 @@ function SortableAddressCard({
             <button
               type="button"
               {...(draggable ? { ...attributes, ...listeners } : {})}
-              className="text-xs text-gray-400 hover:text-gray-600 disabled:opacity-40"
+              className="text-xs text-gray-400 hover:text-muted disabled:opacity-40"
               disabled={!draggable}
             >
               ☰
@@ -145,22 +145,16 @@ function SortableAddressCard({
         </CardHeader>
 
         <CardContent className="text-xs py-2 space-y-1">
-          <div className="text-gray-500 break-all">{item.id}</div>
-
-          <div className="flex items-center gap-2 text-[10px] text-gray-500">
-            <span>{item.isContact ? "Contact" : "Contract"}</span>
-            <span>·</span>
-            <span>Name: {item.name}</span>
-          </div>
+          <div className="text-muted break-all">{item.id}</div>
 
           {item.group && item.group.length > 0 && (
             <div className="mt-1 flex flex-wrap gap-1">
               {item.group.map((tag) => (
                 <span
                   key={tag}
-                  className="rounded-full border px-2 py-0.5 text-[10px] leading-none"
+                  className="rounded-full px-2 py-0.5 text-[10px] leading-none"
                 >
-                  {tag}
+                  {tag}&nbsp;
                 </span>
               ))}
             </div>

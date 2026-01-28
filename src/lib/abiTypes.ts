@@ -948,5 +948,7 @@ export function getFunctions(abi: Abi | null | undefined): AbiFunctionFragment[]
 }
 
 export function getInputName(input: AbiParameter, index: number) {
-  return input.name && input.name.length > 0 ? input.name : `arg${index}`;
+  const name = input.name?.replace(/^_+/, ""); // remove leading underscores
+
+  return name && name.length > 0 ? name : `arg${index}`;
 }

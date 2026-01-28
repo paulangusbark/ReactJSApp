@@ -183,13 +183,16 @@ function AppShell({ children, address, domain }: {
             {/* <span className="font-semibold">QuantumAccount</span> */}
           </Link>
           <div className="flex items-center gap-2">
-            <NavDropdown />
+            <NavDropdown />&nbsp;
             <WalletSwitcher domain={domain} />
           </div>
         </div>
       </header>
-      <main className="mx-auto grid max-w-6xl gap-6 px-4 py-6 pb-[calc(56px+env(safe-area-inset-bottom))] lg:pb-0 lg:grid-cols-[220px_1fr]">
-        <section className="min-h-[60vh]">{children}</section>
+      <main className="mx-auto grid max-w-6xl gap-6 px-4 py-6
+  pb-[calc(56px+env(safe-area-inset-bottom))]
+  lg:pb-6
+  lg:grid-cols-[220px_1fr]">
+        <section className="min-h-[60dvh]">{children}</section>
       </main>
       <BottomNav />
     </div>
@@ -268,8 +271,8 @@ function Nav({ to, label }: { to: string; label: string }) {
 
 function BottomNav() {
   return (
-    <div className="fixed inset-x-0 bottom-0 z-20 h-14 border-t border-border bg-background p-2 pb-[env(safe-area-inset-bottom)]">
-      <div className="mx-auto grid h-14 max-w-md grid-cols-4 gap-2 text-center text-xs text-muted">
+    <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background pb-[env(safe-area-inset-bottom)]">
+      <div className="mx-auto grid h-14 max-w-md grid-cols-4 gap-2 px-2 text-center text-xs text-muted items-center">
         <NavLink to="/dashboard">Home</NavLink>
         <NavLink to="/transactions">Transactions</NavLink>
         <NavLink to="/legal/terms">T&C</NavLink>

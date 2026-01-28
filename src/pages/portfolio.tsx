@@ -142,7 +142,227 @@ export function Folios() {
       integer.toString() + (fractionStr.length > 0 ? "." + fractionStr : "");
 
     return negative ? "-" + result : result;
-  } "./pages/transactions"
+  }
+
+  // --- Filtering and sorting ----------------------------------------------------
+
+  type FiltersDropdownProps = {
+    primarySortMode: string;
+    setPrimarySortMode: (v: any) => void;
+
+    secondarySortMode: string;
+    setSecondarySortMode: (v: any) => void;
+
+    tagSearch: string;
+    setTagSearch: (v: string) => void;
+
+    setTags: (tags: string[]) => void;
+
+    tagMode: "any" | "all";
+    setTagSearchMode: (v: "any" | "all") => void;
+  };
+
+  function FiltersDropdown({
+    primarySortMode,
+    setPrimarySortMode,
+    secondarySortMode,
+    setSecondarySortMode,
+    tagSearch,
+    setTagSearch,
+    setTags,
+    tagMode,
+    setTagSearchMode,
+  }: FiltersDropdownProps) {
+    const [open, setOpen] = React.useState(false);
+    const btnRef = React.useRef<HTMLButtonElement | null>(null);
+
+    const [pos, setPos] = React.useState<{ top: number; left: number; width: number }>({
+      top: 0,
+      left: 0,
+      width: 320,
+    });
+
+    const close = () => setOpen(false);
+
+    const updatePos = React.useCallback(() => {
+      if (!btnRef.current) return;
+
+      const r = btnRef.current.getBoundingClientRect();
+      const margin = 8;
+
+      // panel width adapts to viewport (fits small screens)
+      const width = Math.min(360, window.innerWidth - margin * 2);
+
+      const top = r.bottom + 8;
+
+      // Prefer right-align to button, but clamp inside viewport
+      const preferredLeft = r.right - width;
+      const left = Math.min(
+        Math.max(margin, preferredLeft),
+        window.innerWidth - width - margin
+      );
+
+      setPos({ top, left, width });
+    }, []);
+
+    const toggle = () => {
+      const next = !open;
+      if (next) updatePos();
+      setOpen(next);
+    };
+
+    // close on Escape
+    React.useEffect(() => {
+      if (!open) return;
+      const onKeyDown = (e: KeyboardEvent) => {
+        if (e.key === "Escape") close();
+      };
+      window.addEventListener("keydown", onKeyDown);
+      return () => window.removeEventListener("keydown", onKeyDown);
+    }, [open]);
+
+    // keep anchored to button on resize/scroll
+    React.useEffect(() => {
+      if (!open) return;
+      window.addEventListener("resize", updatePos);
+      window.addEventListener("scroll", updatePos, true);
+      return () => {
+        window.removeEventListener("resize", updatePos);
+        window.removeEventListener("scroll", updatePos, true);
+      };
+    }, [open, updatePos]);
+
+    return (
+      <>
+        <button
+          ref={btnRef}
+          type="button"
+          className="h-9 whitespace-nowrap rounded-md border border-border bg-card px-3 text-sm text-foreground"
+          onClick={toggle}
+        >
+          &nbsp;Sort / Filter&nbsp;
+        </button>
+
+        {open &&
+          typeof document !== "undefined" &&
+          createPortal(
+            <>
+              {/* Backdrop */}
+              <div
+                onClick={close}
+                style={{
+                  position: "fixed",
+                  inset: 0,
+                  zIndex: 9998,
+                  background: "rgba(0,0,0,0.35)",
+                }}
+              />
+
+              {/* Panel */}
+              <div
+                className="rounded-xl border border-border bg-card shadow-lg"
+                style={{
+                  position: "fixed",
+                  zIndex: 9999,
+                  top: pos.top,
+                  left: pos.left,
+                  width: pos.width,
+                  padding: 12,
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="mb-2 text-sm font-semibold">Sort</div>
+                <select
+                  className="h-9 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground"
+                  value={primarySortMode}
+                  onChange={(e) => setPrimarySortMode(e.target.value as any)}
+                >
+                  <option value="nameAsc">Name (A → Z)</option>
+                  <option value="nameDesc">Name (Z → A)</option>
+                  <option value="symbolAsc">Symbol (A → Z)</option>
+                  <option value="symbolDesc">Symbol (Z → A)</option>
+                  <option value="chainIdAsc">Chain ID (Low → High)</option>
+                  <option value="chainIdDesc">Chain ID (High → Low)</option>
+                  <option value="createdDesc">Newest first</option>
+                  <option value="createdAsc">Oldest first</option>
+                </select>
+
+                <div className="mb-2 text-sm font-semibold">Sort</div>
+                <select
+                  className="h-9 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground"
+                  value={secondarySortMode}
+                  onChange={(e) => setSecondarySortMode(e.target.value as any)}
+                >
+                  <option value="nameAsc">Name (A → Z)</option>
+                  <option value="nameDesc">Name (Z → A)</option>
+                  <option value="symbolAsc">Symbol (A → Z)</option>
+                  <option value="symbolDesc">Symbol (Z → A)</option>
+                  <option value="chainIdAsc">Chain ID (Low → High)</option>
+                  <option value="chainIdDesc">Chain ID (High → Low)</option>
+                  <option value="createdDesc">Newest first</option>
+                  <option value="createdAsc">Oldest first</option>
+                </select>
+
+                <div className="my-3 border-t border-border" />
+
+                <div className="mb-2 text-sm font-semibold">Filter by tags</div>
+                <input
+                  className="h-9 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground placeholder:text-muted"
+                  placeholder="Comma-separated tags…"
+                  value={tagSearch}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    setTagSearch(raw);
+
+                    const tokens = raw
+                      .split(",")
+                      .map((t) => t.trim())
+                      .filter(Boolean);
+
+                    setTags(tokens);
+                  }}
+                />
+
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="text-xs text-muted">Mode</span>
+                  <select
+                    className="h-9 flex-1 rounded-md border border-border bg-background px-2 text-sm text-foreground"
+                    value={tagMode}
+                    onChange={(e) => setTagSearchMode(e.target.value as "any" | "all")}
+                  >
+                    <option value="any">Match any</option>
+                    <option value="all">Match all</option>
+                  </select>
+
+                  <button
+                    type="button"
+                    className="h-9 rounded-md border border-border bg-card px-3 text-sm hover:bg-muted"
+                    onClick={() => {
+                      setTagSearch("");
+                      setTags([]);
+                      setTagSearchMode("any");
+                    }}
+                  >
+                    Clear
+                  </button>
+                </div>
+
+                <div className="mt-3 flex justify-end">
+                  <button
+                    type="button"
+                    className="h-9 rounded-md bg-primary px-3 text-sm text-primary-foreground"
+                    onClick={close}
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            </>,
+            document.body
+          )}
+      </>
+    );
+  }
 
   // --- Modal helpers ---------------------------------------------------------
 
@@ -219,13 +439,7 @@ export function Folios() {
         Portfolio
       </h1>
 
-      <div className="flex flex-1 min-w-0 flex-nowrap items-center gap-2 sm:justify-end sm:mt-1">
-        <input
-          className="h-9 min-w-[160px] max-w-[260px] flex-[1_1_220px] rounded-md border border-border bg-card px-2 text-sm text-foreground placeholder:text-muted"
-          placeholder="Search by name or address…"
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-        />
+      <div className="flex flex-col gap-2">
         <select
           className="h-9 w-[140px] rounded-md border border-border bg-card px-2 text-sm text-foreground"
           value={chainId}
@@ -237,66 +451,33 @@ export function Folios() {
             </option>
           ))}
         </select>
-        <select
-          className="h-9 w-[140px] rounded-md border border-border bg-card px-2 text-sm text-foreground"
-          value={primarySortMode}
-          onChange={e => setPrimarySortMode(e.target.value as any)}
-        >
-          <option disabled>Primary sort</option>
-          <option value="nameAsc">Name (A → Z)</option>
-          <option value="nameDesc">Name (Z → A)</option>
-          <option value="symbolAsc">Symbol (A → Z)</option>
-          <option value="symbolDesc">Symbol (Z → A)</option>
-          <option value="chainIdAsc">Chain ID (Low → High)</option>
-          <option value="chainIdDesc">Chain ID (High → Low)</option>
-          <option value="createdDesc">Newest first</option>
-          <option value="createdAsc">Oldest first</option>
-        </select>
-        <select
-          className="h-9 w-[140px] rounded-md border border-border bg-card px-2 text-sm text-foreground"
-          value={secondarySortMode}
-          onChange={e => setSecondarySortMode(e.target.value as any)}
-        >
-          <option disabled>Secondary sort</option>
-          <option value="nameAsc">Name (A → Z)</option>
-          <option value="nameDesc">Name (Z → A)</option>
-          <option value="symbolAsc">Symbol (A → Z)</option>
-          <option value="symbolDesc">Symbol (Z → A)</option>
-          <option value="chainIdAsc">Chain ID (Low → High)</option>
-          <option value="chainIdDesc">Chain ID (High → Low)</option>
-          <option value="createdDesc">Newest first</option>
-          <option value="createdAsc">Oldest first</option>
-        </select>
         <input
-          className="h-9 min-w-[180px] max-w-[300px] flex-[1_1_240px] rounded-md border border-border bg-card px-2 text-sm text-foreground placeholder:text-muted"
-          placeholder="Filter by coin tags (comma-separated)…"
-          value={tagSearch}
-          onChange={e => {
-            const raw = e.target.value;
-            setTagSearch(raw);
-
-            const tokens = raw
-              .split(",")
-              .map(t => t.trim())
-              .filter(Boolean);
-
-            setTags(tokens);
-          }}
+          className="h-9 w-full rounded-md border border-border bg-card px-2 text-sm text-foreground placeholder:text-muted sm:max-w-md"
+          placeholder="Search by name or address…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
         />
-        <select
-          className="h-9 w-[110px] rounded-md border border-border bg-card px-2 text-sm text-foreground"
-          value={tagMode}
-          onChange={e => setTagSearchMode(e.target.value as "any" | "all")}
-        >
-          <option value="any">Match any</option>
-          <option value="all">Match all</option>
-        </select>
-        <button
-          className="h-9 whitespace-nowrap rounded-md bg-bg px-3 text-sm font-medium text-primary hover:opacity-90"
-          onClick={openAddModal}
-        >
-          Create account
-        </button>
+
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <FiltersDropdown
+            primarySortMode={primarySortMode}
+            setPrimarySortMode={setPrimarySortMode}
+            secondarySortMode={secondarySortMode}
+            setSecondarySortMode={setSecondarySortMode}
+            tagSearch={tagSearch}
+            setTagSearch={setTagSearch}
+            setTags={setTags}
+            tagMode={tagMode as "any" | "all"}
+            setTagSearchMode={setTagSearchMode}
+          />&nbsp;
+
+          <button
+            className="h-9 rounded-md border border-border bg-card px-3 text-sm"
+            onClick={openAddModal}
+          >
+            &nbsp;Create account&nbsp;
+          </button>
+        </div>
       </div>
 
       {sortedPortfolio.length === 0 ? (
@@ -328,23 +509,32 @@ export function Folios() {
             return (
               <li
                 key={`${item.folioId}-${item.coinId}-${item.walletId}`}
-                className="grid grid-cols-[80px_80px_80px_80px_1fr_110px] items-start gap-x-6 gap-y-2 rounded-lg border px-8 py-3 text-sm overflow-visible"
+                className="
+    grid gap-x-6 gap-y-2 rounded-lg border px-4 py-3 text-sm
+    grid-cols-1
+    sm:grid-cols-[80px_80px_1fr_110px] sm:items-start sm:px-8
+  "
               >
-                <div className="flex items-center gap-2">
+                <div className="min-w-0">
 
                   <span className="font-medium">{folioName}</span>
                 </div>
+                <div className="min-w-0">
 
-                <div className="text-xs text-muted">{coinSymbol}</div>
+                  <div className="text-xs text-muted">{coinSymbol}</div>
 
-                <div className="text-xs text-muted">
-                  Balance: {balanceStr} {coinSymbol}
+
+                  <div className="text-xs text-muted">
+                    Balance: {balanceStr} {coinSymbol}
+                  </div>
+                </div>
+                <div className="min-w-0">
+
+                  <div className="text-xs text-muted">{chainName}</div>
                 </div>
 
-                <div className="text-xs text-muted">{chainName}</div>
-
                 {/* Actions column */}
-                <div className="justify-self-start overflow-visible">
+                <div className="justify-self-start sm:justify-self-end overflow-visible">
                   <details className="relative inline-block overflow-visible">
                     <summary className="cursor-pointer list-none rounded-md border bg-background px-2 py-1 text-xs">
                       Actions
@@ -385,7 +575,9 @@ export function Folios() {
       {isModalOpen ? createPortal(
         <div
           className="bg-background/80 backdrop-blur-sm"
-          onMouseDown={closeModal}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeModal();
+          }}
           style={{
             position: "fixed",
             inset: 0,
@@ -427,13 +619,13 @@ export function Folios() {
                   className="rounded-md border px-3 py-1 text-xs"
                   onClick={closeModal}
                 >
-                  Cancel
-                </button>
+                  &nbsp;Cancel&nbsp;
+                </button>&nbsp;
                 <button
                   type="submit"
                   className="rounded-md bg-primary px-3 py-1 text-xs font-medium text-background"
                 >
-                  {editingFolio ? "Save changes" : "Create account"}
+                  &nbsp;{editingFolio ? "Save changes" : "Create account"}&nbsp;
                 </button>
               </div>
             </form>
@@ -445,26 +637,44 @@ export function Folios() {
       {/* Modal */}
       {folioToDelete && (
         <div
-          className="bg-background/80 backdrop-blur-sm"
-          onMouseDown={closeModal}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeModal();
+          }}
           style={{
             position: "fixed",
             inset: 0,
             zIndex: 2147483647,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            background: "rgba(0,0,0,0.35)",
+            backdropFilter: "blur(6px)",
+
+            // Make the overlay scrollable and safe on mobile
+            overflowY: "auto",
+            WebkitOverflowScrolling: "touch",
             padding: 16,
+
+            // Use dvh to avoid mobile viewport bugs
+            minHeight: "100dvh",
+
+            // Center on desktop, bottom on mobile
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
           }}
         >
-          <div className="bg-background"
-            onMouseDown={(e) => e.stopPropagation()}
+          <div onClick={(e) => e.stopPropagation()}
             style={{
-              width: "100%",
-              maxWidth: 448,
+              width: "min(448px, calc(100dvw - 32px))",
               borderRadius: 12,
               padding: 16,
               boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
+
+              // Ensure it’s visible even if theme classes are missing
+              background: "#fff",
+              color: "#111",
+
+              // Don’t exceed viewport
+              maxHeight: "calc(100dvh - 32px)",
+              overflowY: "auto",
             }}
           >
             <h2 className="text-base font-semibold">Delete account?</h2>
@@ -473,13 +683,13 @@ export function Folios() {
               This action cannot be undone and you could lose access to your assets.
             </p>
 
-            <div className="mt-4 flex justify-end gap-2">
+            <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button
                 className="rounded-md border px-3 py-1 text-sm"
                 onClick={() => setFolioToDelete(null)}
               >
-                Cancel
-              </button>
+                &nbsp;Cancel&nbsp;
+              </button>&nbsp;
               <button
                 className="rounded-md bg-primary px-3 py-1 text-sm text-background"
                 onClick={() => {
@@ -489,7 +699,7 @@ export function Folios() {
                   setFolioToDelete(null);
                 }}
               >
-                Yes, delete account
+                &nbsp;Yes, delete account&nbsp;
               </button>
             </div>
           </div>
