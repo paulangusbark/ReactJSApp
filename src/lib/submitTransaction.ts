@@ -98,8 +98,8 @@ export function parseBalance(
 
 
 // --- HTTP util ---
-const BUNDLER = `http://localhost:8080` as string;
-const PAYMASTER = `http://localhost:8081` as string;
+const BUNDLER = `http://localhost:8080/userop` as string;
+const PAYMASTER = `http://localhost:8081/pmg` as string;
 
 async function j<T>(url: string, init?: RequestInit): Promise<T> {
   const r = await fetch(url, { headers: { "Content-Type": "application/json" }, ...init });

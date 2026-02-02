@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { keccak256 } from "viem";
 import { PaymasterAPI, GenericResponse } from "./submitTransaction";
 import { getAddress, getFalconPublicKey } from "../storage/keyStore";
 import { sign } from "../crypto/falcon";
@@ -24,42 +24,30 @@ type WalletsProps = {
   salt: string;         // random salt for QA creation
 };
 
-export function Wallets({
+export async function createQuantumAccount({
   sender,
   domain,
   salt,
-}: WalletsProps): boolean{
+}: WalletsProps): Promise<boolean> {
+  const publicKey = await getFalconPublicKey();
+  if (!publicKey) throw new Error("No Falcon public key available");
 
-  var success = false;
+  const rawMessage = createAccountToBytes({
+    sender,
+    domain,
+    publicKey: bytesToHex(publicKey),
+    salt: stringToHex(salt),
+  });
 
-  const handleCreateQuantumAccount = async () => {
-    try {
-      const publicKey = await getFalconPublicKey();
-      if (!publicKey) throw new Error("No Falcon public key available");
-      const rawMessage = createAccountToBytes({
-        sender: sender, 
-        domain: domain, 
-        publicKey: bytesToHex(publicKey), 
-        salt: stringToHex(salt),
-      });
-      const signature = await sign(rawMessage, domain);
-      const res = await PaymasterAPI.createNewAccount(
-        sender,
-        domain,
-        bytesToHex(publicKey),
-        stringToHex(salt),
-        signature
-      );
+  const signature = await sign(keccak256(rawMessage), domain);
 
-      /* if (!res.success) {
-        throw new Error(String(res.result ?? "Paymaster returned success=false"));
-      } */
+  const res = await PaymasterAPI.createNewAccount(
+    sender,
+    domain,
+    bytesToHex(publicKey),
+    stringToHex(salt),
+    signature
+  );
 
-      success = res.success
-      // TODO: if res.result contains the new QA address, stash it in global state / context
-    } catch (e: any) {
-      return Promise.reject(e?.message ?? "Unknown error during QuantumAccount creation");
-    }
-  }
-  return success;
+  return !!res.success;
 }

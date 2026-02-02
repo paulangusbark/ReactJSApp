@@ -3,7 +3,7 @@ import { useFolioList } from "../hooks/useFolioList";
 import { PortfolioStore, Folio } from "@/storage/folioStore";
 import { sortPortfolio } from "@/lib/folioSorting";
 import { useCoinList } from "@/hooks/useCoinList";
-import { Wallets } from "@/lib/wallets";
+import { createQuantumAccount } from "@/lib/wallets";
 import { getAddress } from "@/storage/keyStore";
 import { Address } from "viem";
 import { useDomains } from "@/hooks/useDomains";
@@ -408,7 +408,7 @@ export function Folios() {
         console.error("No sender address available for new folio");
         return;
       }
-      const newWallet = Wallets({
+      const newWallet = await createQuantumAccount({
         sender: sender as Address,
         domain: selectDomain.name,
         salt: "default", // replace with actual salt
