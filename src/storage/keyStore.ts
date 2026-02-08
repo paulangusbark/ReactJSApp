@@ -195,17 +195,13 @@ export async function getAddress(salt: string, level: FalconLevel): Promise<stri
   if (!pk) {
     throw new Error("Falcon public key not found");
   }
-  const entryPointAddress = `0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496`; // need to replace with domain look up
-  const factoryAddress = `0x90193C961A926261B756D1E5bb255e67ff9498A1`; // need to replace with domain look up
-  const falconAddress = `0x34A1D3fff3958843C43aD80F30b94c510645C316`; // need to replace with domain look up
-  const ownerAddress = `0xADBD6a7c08f0A747ae1AEE16B6B86B7DF14dD113`; // need to replace with rpc key address (may create domain type structure later)
-  const domainName = `LOCAL`; // need to replace with user input domain name
+  const entryPointAddress = `0x5b73C5498c1E3b4dbA84de0F1833c4a029d90519`; // need to replace with domain look up
+  const factoryAddress = `0x34A1D3fff3958843C43aD80F30b94c510645C316`; // need to replace with domain look up
+  const falconAddress = `0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496`; // need to replace with domain look up
   const address = predictQuantumAccountAddress({
     entryPoint: entryPointAddress,
     factory: factoryAddress,
     falcon: falconAddress,
-    owner: ownerAddress,
-    domain: stringToHex(domainName),
     publicKeyBytes: bytesToHex(pk),
     salt: stringToHex(salt),
   });

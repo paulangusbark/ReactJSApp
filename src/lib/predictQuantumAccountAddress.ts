@@ -5,6 +5,7 @@ import {
   encodeAbiParameters,
   parseAbiParameters,
   concatHex,
+  pad,
 } from "viem";
 
 // You MUST paste in the creationCode of QuantumAccount (0x....)
@@ -21,31 +22,27 @@ export const QUANTUM_ACCOUNT_CREATION_CODE: Hex =
 export function predictQuantumAccountAddress(params: {
   factory: Address;
   entryPoint: Address;
-  owner: Address;
   falcon: Address;
-  domain: Hex;
   publicKeyBytes: Hex;
   salt: Hex; // 32-byte hex
 }): Address {
   const {
     factory,
     entryPoint,
-    owner,
     falcon,
-    domain,
     publicKeyBytes,
     salt,
   } = params;
 
   //
   // 1. Encode constructor args EXACTLY as Solidity does:
-  //    abi.encode(entryPoint, owner, falcon, domain, publicKeyBytes)
+  //    abi.encode(entryPoint, falcon, publicKeyBytes)
   //
   const encodedArgs = encodeAbiParameters(
     parseAbiParameters(
-      "address entryPoint, address owner, address falcon, bytes domain, bytes publicKeyBytes"
+      "address entryPoint, address falcon, bytes publicKeyBytes"
     ),
-    [entryPoint, owner, falcon, domain, publicKeyBytes]
+    [entryPoint, falcon, publicKeyBytes]
   );
 
   //
@@ -63,10 +60,13 @@ export function predictQuantumAccountAddress(params: {
   //
   //    keccak256( 0xff ++ factory ++ salt ++ initCodeHash )[12:]
   //
+
+  const salt32 = pad(salt, { size: 32 });
+
   const data = concatHex([
     "0xff",
     factory,
-    salt,
+    salt32,
     initCodeHash,
   ]);
 

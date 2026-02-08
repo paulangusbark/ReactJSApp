@@ -104,7 +104,11 @@ const PAYMASTER = `http://localhost:8081/pmg` as string;
 
 async function j<T>(url: string, init?: RequestInit): Promise<T> {
   const r = await fetch(url, { headers: { "Content-Type": "application/json" }, ...init });
-  if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+  if (!r.ok) {
+    const body = await r.json().catch(() => null);
+    console.error(`[API] ${r.status} ${r.statusText}`, body);
+    throw new Error(`${r.status} ${r.statusText}`);
+  }
   return r.json();
 }
 
