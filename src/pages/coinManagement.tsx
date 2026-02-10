@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useCoinList } from "../hooks/useCoinList";
 import { Coin } from "@/storage/coinStore";
+import { useFolios } from "@/hooks/useFolios";
 import { createPortal } from "react-dom";
 
 export function Coins() {
@@ -47,6 +48,8 @@ export function Coins() {
     deleteCoin,
     updateCoin,
   } = useCoinList({ query, sortMode, tags, tagMode, standard, chainId });
+
+  const { folios: allFolios, updateFolio } = useFolios();
 
   // --- Filtering and sorting ----------------------------------------------------
 
@@ -356,7 +359,17 @@ export function Coins() {
     if (editingCoin) {
       await updateCoin(editingCoin.id, payload);
     } else {
-      await addCoin(payload);
+      const updatedCoins = await addCoin(payload);
+      const newCoin = updatedCoins[updatedCoins.length - 1];
+      // Add a wallet entry for this coin to all folios with matching chainId
+      for (const folio of allFolios) {
+        if (folio.chainId === Number(formChainId)) {
+          const existing = folio.wallet ?? [];
+          await updateFolio(folio.id, {
+            wallet: [...existing, { coin: newCoin.id, balance: BigInt(0) }],
+          });
+        }
+      }
     }
 
     closeModal();
@@ -733,8 +746,21 @@ export function Coins() {
               </button>
               <button
                 className="rounded-md bg-primary px-3 py-1 text-sm text-background"
-                onClick={() => {
+                onClick={async () => {
                   if (itemToDelete) {
+                    const coinToDelete = coins.find(c => c.id === itemToDelete);
+                    if (coinToDelete) {
+                      // Remove wallet entries for this coin from all folios with matching chainId
+                      for (const folio of allFolios) {
+                        if (folio.chainId === coinToDelete.chainId) {
+                          const existing = folio.wallet ?? [];
+                          const filtered = existing.filter(w => w.coin !== coinToDelete.id);
+                          if (filtered.length !== existing.length) {
+                            await updateFolio(folio.id, { wallet: filtered });
+                          }
+                        }
+                      }
+                    }
                     deleteCoin(itemToDelete);
                   }
                   setItemToDelete(null);
