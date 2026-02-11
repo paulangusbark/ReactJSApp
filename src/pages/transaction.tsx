@@ -12,9 +12,9 @@ import { useDomains } from "@/hooks/useDomains";
 import { useFolioList } from "@/hooks/useFolioList";
 import { useAddressList } from "@/hooks/useAddressList";
 import { useTx } from "@/lib/submitTransaction";
-import { Abi, encodeFunctionData, createPublicClient, http } from "viem";
+import { Abi, encodeFunctionData, createPublicClient, http, type Hex } from "viem";
 import { parseAbiArg } from "@/lib/parseAbiArgs";
-import { AbiFunctionFragment, getFunctions, getInputName, extractAbi, erc20Abi, erc721Abi, erc1155Abi, nativeAbi } from "@/lib/abiTypes";
+import { AbiFunctionFragment, getFunctions, getInputName, extractAbi, erc20Abi, erc721Abi, erc1155Abi, nativeAbi, quantumAccountAbi } from "@/lib/abiTypes";
 import { TxStatus } from "@/lib/submitTransaction";
 import { createPortal } from "react-dom";
 
@@ -452,32 +452,109 @@ export function Transactions() {
 
     try {
       setIsReading(true);
-      const args = buildArgs();
 
-      const _calldata = encodeFunctionData({
-        abi,
-        functionName: selectedFn.name,
-        args,
-      });
+      const isNative = transferOrTransaction && selectCoin?.type === "NATIVE";
 
-      //const _selector = (`0x${_calldata.slice(2, 10)}`) as `0x${string}`; // first 4 bytes
+      let dest: `0x${string}` | null = null;
 
-      //setSelector(_selector);
-      //setCalldata(_calldata as `0x${string}`);
-      if (selectFolio && selectDomain && _calldata) {
-        await startFlow({
-          folio: selectFolio,
-          encoded: _calldata,
-          domain: selectDomain
-        });
-        const currentStatus = useTx.getState().status;
-        setStatus(currentStatus);
-        if (currentStatus.phase === "failed") {
-          setError(currentStatus.message ?? "Transaction failed");
+      // Build execute(value,data)
+      let value: bigint = 0n;
+      let innerData: Hex = "0x";
+
+      if (isNative) {
+
+        if (!selectedFn) {
+          setError("No function selected");
           return;
         }
-        handleSubmit();
+
+        const args = buildArgs(); // expected: [_to, _value]
+
+        const to = (args?.[0] as string | undefined)?.trim();
+        const amount = args?.[1] as bigint | undefined;
+
+        if (!to || !to.startsWith("0x")) {
+          setError("Invalid _to address");
+          return;
+        }
+        if (amount == null) {
+          setError("Invalid _value amount");
+          return;
+        }
+
+        dest = to as `0x${string}`;
+        value = BigInt(amount);
+        innerData = "0x";
+      } else {
+        // Non-native: encode the selected function against the selected ABI
+        if (!abi) {
+          setError("No ABI found");
+          return;
+        }
+        if (!selectedFn) {
+          setError("No function selected");
+          return;
+        }
+
+        const args = buildArgs();
+        innerData = encodeFunctionData({
+          abi,
+          functionName: selectedFn.name,
+          args,
+        }) as Hex;
+
+        if (transferOrTransaction) {
+          // token call: dest = token contract address
+          const tokenAddr = (selectCoin?.address ?? "").trim();
+          if (!tokenAddr.startsWith("0x")) {
+            setError("Coin has no valid contract address");
+            return;
+          }
+          dest = tokenAddr as `0x${string}`;
+          value = 0n;
+        } else {
+          // contract call: dest = selected contract address
+          const cAddr = (selectContract?.address ?? "").trim();
+          if (!cAddr.startsWith("0x")) {
+            setError("Contract has no valid address");
+            return;
+          }
+          dest = cAddr as `0x${string}`;
+          value = 0n; // (if you later support payable contract calls, take value from UI)
+        }
       }
+
+      if (!dest) {
+        setError("Could not resolve destination address");
+        return;
+      }
+
+      // Wrap into QuantumAccount.execute(dest,value,innerData)
+      const wrappedCalldata = encodeFunctionData({
+        abi: quantumAccountAbi,
+        functionName: "execute",
+        args: [dest, value, innerData],
+      }) as `0x${string}`;
+
+      const _folio = selectFolio as Folio;
+      const _domain = selectDomain as Domain;
+
+      await startFlow({
+        folio: _folio,
+        encoded: wrappedCalldata,
+        domain: _domain,
+      });
+
+      const currentStatus = useTx.getState().status;
+      setStatus(currentStatus);
+
+      if (currentStatus.phase === "failed") {
+        setError(currentStatus.message ?? "Transaction failed");
+        return;
+      }
+
+      handleSubmit();
+
     } catch (err: any) {
       console.error(err);
       setError(err?.message ?? "Failed to build calldata");

@@ -21,13 +21,13 @@ export type Domain = {
 }
 
 const BUILTIN_DOMAINS: Domain[] = [{
-  name: "LOCAL",
-  chainId: 31337,
+  name: "ETHEREUM SEPOLIA",
+  chainId: 11155111,
   entryPoint: "0x4337084D9E255Ff0702461CF8895CE9E3b5Ff108",  // need to add proper address
-  paymaster: "0xC7D02Ae80f0ECb64543176EDBDD1153d34dFA622",
+  paymaster: "0x1CB61909E699bfB42dF4BF742585B4bd8AB1EEA5",
   bundler: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-  rpcUrl: "http://127.0.0.1:8545/", //
-  transactionUrl: "https://www.google.com", //  there isn't one for anvil/local
+  rpcUrl: "https://ethereum-sepolia-rpc.publicnode.com", //
+  transactionUrl: "https://sepolia.etherscan.io/tx/", 
   createdAt: 0,
   updatedAt: 0
 }];

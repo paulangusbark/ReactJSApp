@@ -1,9 +1,10 @@
 import { create } from "zustand";
-import { Address, encodeAbiParameters, parseAbiParameters, keccak256, bytesToHex, hexToBytes, concatHex, padHex, toHex } from "viem";
+import { Address, encodeAbiParameters, parseAbiParameters, keccak256, bytesToHex, hexToBytes, concatHex, padHex, toHex, http, createPublicClient } from "viem";
 import { createFalconWorkerClient } from "@/crypto/falconInterface";
 import { getFalconSecretKey, FalconLevel } from "@/storage/keyStore";
 import { Folio } from "@/storage/folioStore";
 import { Domain } from "@/storage/domainStore";
+import { entryPointAbi } from "./abiTypes";
 
 export interface TxStatus { phase: "idle" | "preparing" | "simulated" | "submitted" | "finalized" | "failed"; hash?: string; userOpHash?: string; message?: string }
 
@@ -228,15 +229,24 @@ export const useTx = create<TxStore>((set, get) => ({
   close: () => set({ open: false, status: { phase: "idle" } }),
   startFlow: async ({ folio, encoded, domain }) => {
     set({ open: true, status: { phase: "preparing", message: "Building UserOp" } });
+    const publicClient = createPublicClient({
+          transport: http(domain.rpcUrl), // if rpcUrl undefined and chain known, viem will still need transport; supply your default
+        });
+    const nonce = await publicClient.readContract({
+      address: domain.entryPoint as `0x${string}`,
+      abi: entryPointAbi,
+      functionName: "getNonce",
+      args: [folio.address as `0x${string}`, 0n], // key = 0 for normal ops
+    }) as bigint;
     const paymaster =
       (folio.paymaster?.startsWith("0x") ? folio.paymaster : undefined) as `0x${string}` | undefined;
     const userOpBase: Omit<PackedUserOperation, "signature"> = {
       sender: folio.address,
-      nonce: hexlify(0), // need to replace with a get nonce function from entry point and need to store nonce
+      nonce: toHex(nonce), 
       initCode: emptyHex(),
       callData: encoded,  // construction and validation done by modal using a separate tool from here
       accountGasLimits: defaultAccountGasLimits(), // will come from bundler api?  or can be internally stored
-      preVerificationGas: hexlify(5_000), // will come from bundler api?
+      preVerificationGas: hexlify(200_000), // will come from bundler api?
       gasFees: packGasFees(), // will come from rpc url
       paymasterAndData: paymaster
         ? packPaymasterAndDataV08({
@@ -250,20 +260,9 @@ export const useTx = create<TxStore>((set, get) => ({
     } as any;
 
     // 3) Sign userOp (placeholder; integrate Falcon-1024 or EOA for demo)
-    console.log("[frontend] hash inputs:", {
-      sender: userOpBase.sender,
-      nonce: userOpBase.nonce,
-      initCode: userOpBase.initCode,
-      callData: (userOpBase.callData as string).slice(0, 20) + "...",
-      accountGasLimits: userOpBase.accountGasLimits,
-      preVerificationGas: userOpBase.preVerificationGas,
-      gasFees: userOpBase.gasFees,
-      paymasterAndData: userOpBase.paymasterAndData,
-      entryPoint: domain.entryPoint,
-      chainId: folio.chainId,
-    });
+
     const userOpHash: `0x${string}` = calculateUserOpHash(userOpBase, domain.entryPoint as `0x${string}`, folio.chainId);
-    console.log("[frontend] userOpHash:", userOpHash);
+
     const falcon = createFalconWorkerClient();
     const falconLevel: FalconLevel = 512; // example for now, will replace with user choice later
 

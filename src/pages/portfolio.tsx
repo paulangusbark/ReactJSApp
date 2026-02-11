@@ -26,7 +26,7 @@ export function Folios() {
   const [tags, setTags] = React.useState<string[]>([]);
   const [tagMode, setTagSearchMode] = React.useState("any");
   const [tagSearch, setTagSearch] = React.useState<string>("");
-  const [chainId, setChainId] = React.useState<number>(31337);
+  const [chainId, setChainId] = React.useState<number>(11155111);
 
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [editingFolio, setEditingFolio] = React.useState<Folio | null>(null);
