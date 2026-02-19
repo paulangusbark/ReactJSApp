@@ -110,6 +110,7 @@ function QrScanModal({
 }
 
 function NavDropdown() {
+  const { signOut } = useAuth();
   const [open, setOpen] = React.useState(false);
   const btnRef = React.useRef<HTMLButtonElement | null>(null);
   const [pos, setPos] = React.useState<{ top: number; right: number }>({ top: 0, right: 0 });
@@ -209,6 +210,13 @@ function NavDropdown() {
               <NavDropItem to="/coins" label="Coins" onSelect={() => setOpen(false)} />
               <NavDropItem to="/legal/terms" label="Terms" onSelect={() => setOpen(false)} />
               <NavDropItem to="/legal/privacy" label="Privacy" onSelect={() => setOpen(false)} />
+              <div className="my-1 border-t border-border" />
+              <button
+                className="block w-full rounded-lg px-3 py-2 text-left text-sm text-red-600 hover:bg-neutral-100"
+                onClick={() => { setOpen(false); signOut(); }}
+              >
+                Log out
+              </button>
             </div>
           </>,
           document.body
