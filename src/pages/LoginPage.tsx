@@ -116,46 +116,46 @@ export function LoginPage() {
                 )}
 
                 {/* Sign-in buttons */}
-                <div className="space-y-2 pt-1">
+                <div className="space-y-4 pt-2">
                   <Button
-                    className="w-full gap-2"
+                    className="w-full gap-2 h-12 text-base"
                     disabled={buttonsDisabled}
                     onClick={() => signIn(googleProvider)}
                   >
                     {/* Google uses a styled text mark — no lucide icon available */}
-                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-neutral-800 leading-none">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-[11px] font-bold text-neutral-800 leading-none">
                       G
                     </span>
                     Continue with Google
                   </Button>
 
                   <Button
-                    className="w-full gap-2"
+                    className="w-full gap-2 h-12 text-base"
                     variant="secondary"
                     disabled={buttonsDisabled}
                     onClick={() => signIn(facebookProvider)}
                   >
-                    <Facebook className="h-4 w-4" />
+                    <Facebook className="h-5 w-5" />
                     Continue with Facebook
                   </Button>
 
                   <Button
-                    className="w-full gap-2"
+                    className="w-full gap-2 h-12 text-base"
                     variant="secondary"
                     disabled={buttonsDisabled}
                     onClick={() => signIn(twitterProvider)}
                   >
-                    <Twitter className="h-4 w-4" />
+                    <Twitter className="h-5 w-5" />
                     Continue with X (Twitter)
                   </Button>
 
                   <Button
-                    className="w-full gap-2"
+                    className="w-full gap-2 h-12 text-base"
                     variant="outline"
                     disabled={buttonsDisabled}
                     onClick={() => signIn(githubProvider)}
                   >
-                    <Github className="h-4 w-4" />
+                    <Github className="h-5 w-5" />
                     Continue with GitHub
                   </Button>
 
