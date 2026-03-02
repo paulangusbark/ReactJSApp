@@ -160,12 +160,9 @@ export const PaymasterAPI = {
 function hexlify(n: number | bigint) { return `0x${BigInt(n).toString(16)}` as const }
 function emptyHex(): `0x${string}` { return "0x" as const }
 
-// Compose gas fees: (priority << 128) | maxFee   
-// fees are managed as MWei since fees are usually less than one GWei
-function packGasFees(priorityMwei = 2n, maxFeePerGas = 4_000_000_000n): `0x${string}` {
-  const MWEI = 1_000_000n;
-  const pr = priorityMwei * MWEI;
-  const packed = (pr << 128n) | maxFeePerGas;
+// Compose gas fees: EIP-4337 gasFees bytes32: HIGH 128 = maxPriorityFeePerGas, LOW 128 = maxFeePerGas
+function packGasFees(maxPriorityFeePerGas: bigint, maxFeePerGas: bigint): `0x${string}` {
+  const packed = (maxPriorityFeePerGas << 128n) | maxFeePerGas;
   return `0x${packed.toString(16).padStart(64, "0")}`;
 }
 
@@ -262,12 +259,18 @@ export const useTx = create<TxStore>((set, get) => ({
     const publicClient = createPublicClient({
           transport: http(domain.rpcUrl), 
         });
-    const nonce = await publicClient.readContract({
-      address: domain.entryPoint as `0x${string}`,
-      abi: entryPointAbi,
-      functionName: "getNonce",
-      args: [folio.address as `0x${string}`, 0n], // key = 0 for normal ops TODO: update for admin/large keys
-    }) as bigint;
+    const [nonce, feeData] = await Promise.all([
+      publicClient.readContract({
+        address: domain.entryPoint as `0x${string}`,
+        abi: entryPointAbi,
+        functionName: "getNonce",
+        args: [folio.address as `0x${string}`, 0n], // key = 0 for normal ops TODO: update for admin/large keys
+      }) as Promise<bigint>,
+      publicClient.estimateFeesPerGas().catch(() => null),
+    ]);
+    // Apply 20% buffer to live network fees to avoid being priced out of the next block
+    const maxFeePerGas = (feeData?.maxFeePerGas ?? 4_000_000_000n) * 12n / 10n;
+    const maxPriorityFeePerGas = (feeData?.maxPriorityFeePerGas ?? 2_000_000n) * 12n / 10n;
     const paymaster =
       (folio.paymaster?.startsWith("0x") ? folio.paymaster : undefined) as `0x${string}` | undefined;
     const userOpBase: Omit<PackedUserOperation, "signature"> = {
@@ -277,7 +280,7 @@ export const useTx = create<TxStore>((set, get) => ({
       callData: encoded,  
       accountGasLimits: defaultAccountGasLimits(), // only changes if ecdsa supported
       preVerificationGas: hexlify(200_000), // will come from bundler api?
-      gasFees: packGasFees(), // will come from rpc url
+      gasFees: packGasFees(maxPriorityFeePerGas, maxFeePerGas),
       paymasterAndData: paymaster
         ? packPaymasterAndDataV08({
           paymaster,
