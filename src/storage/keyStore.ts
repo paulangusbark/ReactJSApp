@@ -223,8 +223,8 @@ export async function getAddress(salt: string, level: FalconLevel): Promise<stri
     throw new Error("Falcon public key not found");
   }
   const entryPointAddress = `0x4337084D9E255Ff0702461CF8895CE9E3b5Ff108`; // need to replace with domain look up
-  const factoryAddress = `0xf3C6758D283e28d99eda462009D776458C1DdE4a`; // need to replace with domain look up
-  const falconAddress = `0x6f70f3475c89AFab28A7c607a645A773Ea76dB45`; // need to replace with domain look up
+  const factoryAddress = `0xb0b80A0B15b5fD7b3895b5B5A66aFD5529DfdAE6`; // need to replace with domain look up
+  const falconAddress = `0x01A272c06df74c3331f1E56f357D7A38f28B7346`; // need to replace with domain look up
   const address = predictQuantumAccountAddress({
     entryPoint: entryPointAddress,
     factory: factoryAddress,
