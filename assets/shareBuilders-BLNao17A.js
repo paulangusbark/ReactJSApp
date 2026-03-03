@@ -1,4 +1,4 @@
-import{b,j as t}from"./vendor-react-C4KqQK9E.js";import{Q as x}from"./vendor-qr-BZDEmg8j.js";import{f as n}from"./index-Di8uPbkD.js";const f=2800;function j({payload:e,onClose:a}){const s=n(e),d=s.length>f;return typeof document>"u"?null:b.createPortal(t.jsxs(t.Fragment,{children:[t.jsx("div",{onClick:a,style:{position:"fixed",inset:0,zIndex:2147483646,background:"rgba(0,0,0,0.35)",backdropFilter:"blur(6px)",WebkitBackdropFilter:"blur(6px)"}}),t.jsxs("div",{role:"dialog","aria-modal":"true",className:`
+import{b,j as t}from"./vendor-react-C4KqQK9E.js";import{Q as x}from"./vendor-qr-BZDEmg8j.js";import{f as n}from"./index-DIuKDBKl.js";const f=2800;function j({payload:e,onClose:a}){const s=n(e),d=s.length>f;return typeof document>"u"?null:b.createPortal(t.jsxs(t.Fragment,{children:[t.jsx("div",{onClick:a,style:{position:"fixed",inset:0,zIndex:2147483646,background:"rgba(0,0,0,0.35)",backdropFilter:"blur(6px)",WebkitBackdropFilter:"blur(6px)"}}),t.jsxs("div",{role:"dialog","aria-modal":"true",className:`
           rounded-2xl
           border border-neutral-200
           bg-[#fffdf7]
