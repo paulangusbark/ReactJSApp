@@ -77,6 +77,7 @@ export function Transactions() {
   const location = useLocation();
   const prefillHandled = React.useRef(false);
   const pendingPrefillFnRef = React.useRef("");
+  const pendingAddressFieldRef = React.useRef<Record<string, AddressFieldState> | null>(null);
 
 
   const CHAIN_NAMES: Record<number, string> = {
@@ -238,7 +239,7 @@ export function Transactions() {
       pendingPrefillFnRef.current = prefill.functionName ?? "transfer";
       setSelectedFnName("");
       if (addrIdx !== -1) {
-        setAddressFieldState({ to: { mode: 'address', manual: '', selectedIndex: addrIdx } });
+        pendingAddressFieldRef.current = { to: { mode: 'address', manual: '', selectedIndex: addrIdx } };
       }
       setIsModalOpen(true);
 
@@ -514,7 +515,12 @@ export function Transactions() {
     // clear BOTH types of inputs whenever function changes
     setArgValues({});
     setPayableValue("");
-    setAddressFieldState({});
+    if (pendingAddressFieldRef.current) {
+      setAddressFieldState(pendingAddressFieldRef.current);
+      pendingAddressFieldRef.current = null;
+    } else {
+      setAddressFieldState({});
+    }
     setReadResult(null);
     setError(null);
   }, [selectedFnName]);
