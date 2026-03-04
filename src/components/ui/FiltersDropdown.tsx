@@ -78,7 +78,7 @@ export function FiltersDropdown({
       <button
         ref={btnRef}
         type="button"
-        className="h-9 whitespace-nowrap rounded-md border border-border bg-card px-3 text-sm text-foreground"
+        className="h-11 sm:h-9 whitespace-nowrap rounded-md border border-border bg-card px-3 text-sm text-foreground"
         onClick={toggle}
       >
         &nbsp;Sort / Filter&nbsp;
@@ -114,7 +114,7 @@ export function FiltersDropdown({
             >
               <div className="mb-2 text-sm font-semibold">Sort</div>
               <select
-                className="h-9 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground"
+                className="h-11 sm:h-9 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground"
                 value={sortMode}
                 onChange={(e) => setSortMode(e.target.value as any)}
               >
@@ -129,7 +129,7 @@ export function FiltersDropdown({
 
               <div className="mb-2 text-sm font-semibold">Filter by tags</div>
               <input
-                className="h-9 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground placeholder:text-muted"
+                className="h-11 sm:h-9 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground placeholder:text-muted"
                 placeholder="Tags separated by space or comma…"
                 value={tagSearch}
                 onChange={(e) => {
@@ -147,7 +147,7 @@ export function FiltersDropdown({
               <div className="mt-2 flex items-center gap-2">
                 <span className="text-xs text-muted">Mode</span>
                 <select
-                  className="h-9 flex-1 rounded-md border border-border bg-background px-2 text-sm text-foreground"
+                  className="h-11 sm:h-9 flex-1 rounded-md border border-border bg-background px-2 text-sm text-foreground"
                   value={tagMode}
                   onChange={(e) => setTagSearchMode(e.target.value as "any" | "all")}
                 >
@@ -157,7 +157,7 @@ export function FiltersDropdown({
 
                 <button
                   type="button"
-                  className="h-9 rounded-md border border-border bg-card px-3 text-sm hover:bg-muted"
+                  className="h-11 sm:h-9 rounded-md border border-border bg-card px-3 text-sm hover:bg-muted"
                   onClick={() => {
                     setTagSearch("");
                     setTags([]);
@@ -171,7 +171,7 @@ export function FiltersDropdown({
               <div className="mt-3 flex justify-end">
                 <button
                   type="button"
-                  className="h-9 rounded-md bg-primary px-3 text-sm text-primary-foreground"
+                  className="h-11 sm:h-9 rounded-md bg-primary px-3 text-sm text-primary-foreground"
                   onClick={close}
                 >
                   Done

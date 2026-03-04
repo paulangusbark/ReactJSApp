@@ -134,7 +134,7 @@ You can send coins or tokens from any of your folios to another address.
    - **Manual** — type or paste the recipient's wallet address
    - **Address book** — choose from an address you have already saved (both contacts and smart contracts)
    - **Coins** — not relevant for sending coins unless the coin has a swap type function that requires an allowance approval.
-   - **My accounts** — send to one of your own folios.
+   - **Folio** — send to one of your own accounts.
 
    **Amount** — enter how many coins you want to send.
 

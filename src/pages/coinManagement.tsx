@@ -251,13 +251,13 @@ export function Coins() {
 
       <div className="flex flex-wrap items-center justify-center gap-2">
         <input
-          className="h-9 w-full rounded-md border border-border bg-card px-2 text-sm text-foreground placeholder:text-muted sm:max-w-md"
+          className="h-11 sm:h-9 w-full rounded-md border border-border bg-card px-2 text-sm text-foreground placeholder:text-muted sm:max-w-md"
           placeholder="Search by name or address…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
         <select
-          className="h-9 w-[140px] rounded-md border border-border bg-card px-2 text-sm text-foreground"
+          className="h-11 sm:h-9 w-[140px] rounded-md border border-border bg-card px-2 text-sm text-foreground"
           value={chainId}
           onChange={e => setChainId(Number(e.target.value))}
         >
@@ -269,7 +269,7 @@ export function Coins() {
           ))}
         </select>
         <select
-          className="h-9 w-[100px] rounded-md border border-border bg-card px-2 text-sm text-foreground"
+          className="h-11 sm:h-9 w-[100px] rounded-md border border-border bg-card px-2 text-sm text-foreground"
           value={standard}
           onChange={(e) => setStandard(e.target.value)}
         >
@@ -303,7 +303,7 @@ export function Coins() {
           />&nbsp;
 
           <button
-            className="h-9 rounded-md border border-border bg-card px-3 text-sm"
+            className="h-11 sm:h-9 rounded-md border border-border bg-card px-3 text-sm"
             onClick={openAddModal}
           >
             &nbsp;+ Add coin&nbsp;
@@ -382,13 +382,13 @@ export function Coins() {
                   {/* Col 4 (Actions) */}
                   <div className="justify-self-start sm:justify-self-end">
                     <details className="relative inline-block">
-                      <summary className="cursor-pointer list-none rounded-md border border-border bg-background px-2 py-1 text-xs">
+                      <summary className="cursor-pointer list-none rounded-md border border-border bg-background px-3 py-2.5 text-sm sm:px-2 sm:py-1 sm:text-xs">
                         Actions
                       </summary>
 
                       <div className="absolute left-0 sm:right-0 sm:left-auto mt-1 w-40 rounded-md border border-border bg-background shadow-lg z-50">
                         <button
-                          className="block w-full px-3 py-2 text-left text-xs hover:bg-muted"
+                          className="block w-full px-4 py-3 text-left text-sm sm:px-3 sm:py-2 sm:text-xs hover:bg-muted"
                           onClick={(e) => {
                             (e.currentTarget.closest("details") as HTMLDetailsElement)?.removeAttribute("open");
                             openEditModal(c);
@@ -401,7 +401,7 @@ export function Coins() {
                           <>
                             <div className="my-1 border-t border-border" />
                             <button
-                              className="block w-full px-3 py-2 text-left text-xs text-red-600 hover:bg-muted"
+                              className="block w-full px-4 py-3 text-left text-sm text-red-600 sm:px-3 sm:py-2 sm:text-xs hover:bg-muted"
                               onClick={(e) => {
                                 (e.currentTarget.closest("details") as HTMLDetailsElement)?.removeAttribute("open");
                                 setItemToDelete(c.id);
@@ -416,7 +416,7 @@ export function Coins() {
 
                         <button
                           type="button"
-                          className="block w-full px-3 py-2 text-left text-xs hover:bg-muted"
+                          className="block w-full px-4 py-3 text-left text-sm sm:px-3 sm:py-2 sm:text-xs hover:bg-muted"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
@@ -534,7 +534,7 @@ export function Coins() {
                   {!editingCoin && formStandard !== "NATIVE" && (
                     <button
                       type="button"
-                      className="rounded-md border px-3 py-1 text-xs disabled:opacity-50"
+                      className="rounded-md border px-4 py-3 text-sm sm:px-3 sm:py-1 sm:text-xs disabled:opacity-50"
                       onClick={handleLookup}
                       disabled={lookupLoading || !formAddress.trim()}
                     >
@@ -598,7 +598,7 @@ export function Coins() {
                   />
                   <button
                     type="button"
-                    className="rounded-md border px-2 py-1 text-xs"
+                    className="rounded-md border px-3 py-2.5 text-sm sm:px-2 sm:py-1 sm:text-xs"
                     onClick={handleAddTagFromInput}
                   >
                     Add
@@ -626,14 +626,14 @@ export function Coins() {
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  className="rounded-md border px-3 py-1 text-xs"
+                  className="rounded-md border px-4 py-3 text-sm sm:px-3 sm:py-1 sm:text-xs"
                   onClick={closeModal}
                 >
                   &nbsp;Cancel&nbsp;
                 </button>&nbsp;
                 <button
                   type="submit"
-                  className="rounded-md bg-primary px-3 py-1 text-xs font-medium text-background"
+                  className="rounded-md bg-primary px-4 py-3 text-sm sm:px-3 sm:py-1 sm:text-xs font-medium text-background"
                   disabled={!editingCoin && !lookupDone && formStandard !== "NATIVE"}
                 >
                   &nbsp;{editingCoin ? "Save changes" : "Create coin"}&nbsp;
@@ -695,13 +695,13 @@ export function Coins() {
 
             <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button
-                className="rounded-md border px-3 py-1 text-sm"
+                className="rounded-md border px-4 py-3 text-sm sm:px-3 sm:py-1"
                 onClick={() => setItemToDelete(null)}
               >
                 Cancel
               </button>
               <button
-                className="rounded-md bg-primary px-3 py-1 text-sm text-background"
+                className="rounded-md bg-primary px-4 py-3 text-sm sm:px-3 sm:py-1 text-background"
                 onClick={async () => {
                   if (itemToDelete) {
                     const coinToDelete = coins.find(c => c.id === itemToDelete);

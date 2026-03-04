@@ -17,10 +17,10 @@ export const Button = React.forwardRef<HTMLButtonElement, Props>(
       ghost: "hover:bg-neutral-100",
     } as const;
     const sizes = {
-      sm: "h-8 px-3",
-      md: "h-9 px-4",
-      lg: "h-10 px-5",
-      icon: "h-9 w-9 p-0",
+      sm: "h-11 sm:h-8 px-3",
+      md: "h-11 sm:h-9 px-4",
+      lg: "h-11 sm:h-10 px-5",
+      icon: "h-11 w-11 sm:h-9 sm:w-9 p-0",
     } as const;
 
     return (

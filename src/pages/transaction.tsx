@@ -453,7 +453,7 @@ export function Transactions() {
     }));
   }
 
-  async function handleSubmit(txStatus?: TxStatus) {
+  async function handleSubmit(txStatus?: TxStatus, toAddress?: string, fromAddress?: string, amount?: string) {
     var addressId;
     if (transferOrTransaction) {
       addressId = selectContact?.id;
@@ -491,6 +491,9 @@ export function Transactions() {
       folioId: selectFolio?.id,
       walletId: selectWallet,
       direction: "outgoing",
+      toAddress,
+      fromAddress,
+      amount,
       ensToName,
     };
 
@@ -843,7 +846,12 @@ export function Transactions() {
         return;
       }
 
-      handleSubmit(currentStatus);
+      handleSubmit(
+        currentStatus,
+        dest ?? undefined,
+        selectFolio?.address ?? undefined,
+        argValues["value"],
+      );
 
     } catch (err: any) {
       console.error(err);

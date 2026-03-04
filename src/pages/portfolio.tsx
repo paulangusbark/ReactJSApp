@@ -93,7 +93,7 @@ function PortfolioFiltersDropdown({
       <button
         ref={btnRef}
         type="button"
-        className="h-9 whitespace-nowrap rounded-md border border-border bg-card px-3 text-sm text-foreground"
+        className="h-11 sm:h-9 whitespace-nowrap rounded-md border border-border bg-card px-3 text-sm text-foreground"
         onClick={toggle}
       >
         &nbsp;Sort / Filter&nbsp;
@@ -109,7 +109,7 @@ function PortfolioFiltersDropdown({
           >
             <div className="mb-2 text-sm font-semibold">Sort</div>
             <select
-              className="h-9 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground"
+              className="h-11 sm:h-9 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground"
               value={primarySortMode}
               onChange={(e) => setPrimarySortMode(e.target.value as any)}
             >
@@ -125,7 +125,7 @@ function PortfolioFiltersDropdown({
 
             <div className="mb-2 text-sm font-semibold">Sort</div>
             <select
-              className="h-9 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground"
+              className="h-11 sm:h-9 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground"
               value={secondarySortMode}
               onChange={(e) => setSecondarySortMode(e.target.value as any)}
             >
@@ -143,7 +143,7 @@ function PortfolioFiltersDropdown({
 
             <div className="mb-2 text-sm font-semibold">Filter by tags</div>
             <input
-              className="h-9 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground placeholder:text-muted"
+              className="h-11 sm:h-9 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground placeholder:text-muted"
               placeholder="Tags separated by space or comma…"
               value={tagSearch}
               onChange={(e) => {
@@ -156,7 +156,7 @@ function PortfolioFiltersDropdown({
             <div className="mt-2 flex items-center gap-2">
               <span className="text-xs text-muted">Mode</span>
               <select
-                className="h-9 flex-1 rounded-md border border-border bg-background px-2 text-sm text-foreground"
+                className="h-11 sm:h-9 flex-1 rounded-md border border-border bg-background px-2 text-sm text-foreground"
                 value={tagMode}
                 onChange={(e) => setTagSearchMode(e.target.value as "any" | "all")}
               >
@@ -165,7 +165,7 @@ function PortfolioFiltersDropdown({
               </select>
               <button
                 type="button"
-                className="h-9 rounded-md border border-border bg-card px-3 text-sm hover:bg-muted"
+                className="h-11 sm:h-9 rounded-md border border-border bg-card px-3 text-sm hover:bg-muted"
                 onClick={() => { setTagSearch(""); setTags([]); setTagSearchMode("any"); }}
               >
                 Clear
@@ -175,7 +175,7 @@ function PortfolioFiltersDropdown({
             <div className="mt-3 flex justify-end">
               <button
                 type="button"
-                className="h-9 rounded-md bg-primary px-3 text-sm text-primary-foreground"
+                className="h-11 sm:h-9 rounded-md bg-primary px-3 text-sm text-primary-foreground"
                 onClick={close}
               >
                 Done
@@ -251,6 +251,7 @@ export function Folios() {
 
   const [nameOpen, setNameOpen] = React.useState(false);
   const [qrPayload, setQrPayload] = React.useState<any>(null);
+  const [copiedFolioId, setCopiedFolioId] = React.useState<string | null>(null);
 
   async function handleShareProfile() {
     const name = (displayName ?? "").trim();
@@ -517,7 +518,7 @@ export function Folios() {
 
       <div className="flex flex-col gap-2">
         <select
-          className="h-9 w-[140px] rounded-md border border-border bg-card px-2 text-sm text-foreground"
+          className="h-11 sm:h-9 w-[140px] rounded-md border border-border bg-card px-2 text-sm text-foreground"
           value={chainId}
           onChange={e => setChainId(Number(e.target.value))}
         >
@@ -528,7 +529,7 @@ export function Folios() {
           ))}
         </select>
         <input
-          className="h-9 w-full rounded-md border border-border bg-card px-2 text-sm text-foreground placeholder:text-muted sm:max-w-md"
+          className="h-11 sm:h-9 w-full rounded-md border border-border bg-card px-2 text-sm text-foreground placeholder:text-muted sm:max-w-md"
           placeholder="Search by name or address…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -548,14 +549,14 @@ export function Folios() {
           />&nbsp;
 
           <button
-            className="h-9 rounded-md border border-border bg-card px-3 text-sm"
+            className="h-11 sm:h-9 rounded-md border border-border bg-card px-3 text-sm"
             onClick={openAddModal}
           >
             &nbsp;Create account&nbsp;
           </button>
 
           <button
-            className="h-9 rounded-md border border-border bg-card px-3 text-sm disabled:opacity-50"
+            className="h-11 sm:h-9 rounded-md border border-border bg-card px-3 text-sm disabled:opacity-50"
             onClick={doRefresh}
             disabled={refreshing}
           >
@@ -563,7 +564,7 @@ export function Folios() {
           </button>
           <button
             type="button"
-            className="h-9 rounded-md border border-border bg-card px-3 text-sm "
+            className="h-11 sm:h-9 rounded-md border border-border bg-card px-3 text-sm "
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -578,7 +579,7 @@ export function Folios() {
 
           <button
             type="button"
-            className="h-9 rounded-md border border-border bg-card px-3 text-sm "
+            className="h-11 sm:h-9 rounded-md border border-border bg-card px-3 text-sm "
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -646,13 +647,13 @@ export function Folios() {
                     {/* Col 4: Actions */}
                     <div className="justify-self-start sm:justify-self-end">
                       <details className="relative inline-block">
-                        <summary className="cursor-pointer list-none rounded-md border border-border bg-background px-2 py-1 text-xs">
+                        <summary className="cursor-pointer list-none rounded-md border border-border bg-background px-3 py-2.5 text-sm sm:px-2 sm:py-1 sm:text-xs">
                           Actions
                         </summary>
 
                         <div className="absolute left-0 sm:right-0 sm:left-auto mt-1 w-40 rounded-md border border-border bg-background shadow-lg z-50">
                           <button
-                            className="block w-full px-3 py-2 text-left text-xs hover:bg-muted"
+                            className="block w-full px-4 py-3 text-left text-sm sm:px-3 sm:py-2 sm:text-xs hover:bg-muted"
                             onClick={(e) => {
                               (e.currentTarget.closest("details") as HTMLDetailsElement)?.removeAttribute("open");
                               folio && openEditModal(folio);
@@ -662,8 +663,25 @@ export function Folios() {
                           </button>
                           <div className="my-1 border-t border-border" />
 
+                          {folio?.address && (
+                            <button
+                              className="block w-full px-4 py-3 text-left text-sm sm:px-3 sm:py-2 sm:text-xs hover:bg-muted"
+                              onClick={async (e) => {
+                                (e.currentTarget.closest("details") as HTMLDetailsElement)?.removeAttribute("open");
+                                try {
+                                  await navigator.clipboard.writeText(folio.address);
+                                  setCopiedFolioId(item.folioId);
+                                  setTimeout(() => setCopiedFolioId(null), 2000);
+                                } catch { /* silent */ }
+                              }}
+                            >
+                              {copiedFolioId === item.folioId ? "Copied!" : "Copy address"}
+                            </button>
+                          )}
+                          <div className="my-1 border-t border-border" />
+
                           <button
-                            className="block w-full px-3 py-2 text-left text-xs text-red-600 hover:bg-muted"
+                            className="block w-full px-4 py-3 text-left text-sm text-red-600 sm:px-3 sm:py-2 sm:text-xs hover:bg-muted"
                             onClick={(e) => {
                               (e.currentTarget.closest("details") as HTMLDetailsElement)?.removeAttribute("open");
                               setFolioToDelete(item.folioId);
@@ -744,7 +762,7 @@ export function Folios() {
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  className="rounded-md border px-3 py-1 text-xs"
+                  className="rounded-md border px-4 py-3 text-sm sm:px-3 sm:py-1 sm:text-xs"
                   onClick={closeModal}
                   disabled={isPending}
                 >
@@ -752,7 +770,7 @@ export function Folios() {
                 </button>&nbsp;
                 <button
                   type="submit"
-                  className="rounded-md bg-primary px-3 py-1 text-xs font-medium text-background"
+                  className="rounded-md bg-primary px-4 py-3 text-sm sm:px-3 sm:py-1 sm:text-xs font-medium text-background"
                   disabled={isPending}
                 >
                   &nbsp;{isPending
@@ -829,7 +847,7 @@ export function Folios() {
 
             <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button
-                className="rounded-md border px-3 py-1 text-sm"
+                className="rounded-md border px-4 py-3 text-sm sm:px-3 sm:py-1"
                 onClick={() => {
                   setFolioToDelete(null);
                   setFolioNameToDelete(null);
@@ -838,7 +856,7 @@ export function Folios() {
                 &nbsp;Cancel&nbsp;
               </button>&nbsp;
               <button
-                className="rounded-md bg-primary px-3 py-1 text-sm text-background"
+                className="rounded-md bg-primary px-4 py-3 text-sm sm:px-3 sm:py-1 text-background"
                 onClick={() => {
                   if (folioToDelete) {
                     deleteFolio(folioToDelete);

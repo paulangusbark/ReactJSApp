@@ -260,7 +260,7 @@ export function Contacts() {
       </h1>
       <div className="flex flex-col gap-2">
         <input
-          className="h-9 w-full rounded-md border border-border bg-card px-2 text-sm text-foreground placeholder:text-muted sm:max-w-md"
+          className="h-11 sm:h-9 w-full rounded-md border border-border bg-card px-2 text-sm text-foreground placeholder:text-muted sm:max-w-md"
           placeholder="Search by name or address…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -286,7 +286,7 @@ export function Contacts() {
           />&nbsp;
 
           <button
-            className="h-9 rounded-md border border-border bg-card px-3 text-sm"
+            className="h-11 sm:h-9 rounded-md border border-border bg-card px-3 text-sm"
             onClick={openAddModal}
           >
             &nbsp;+ Add contact&nbsp;
@@ -343,13 +343,13 @@ export function Contacts() {
                   {/* Col 4: Actions */}
                   <div className="justify-self-start sm:justify-self-end">
                     <details className="relative inline-block">
-                      <summary className="cursor-pointer list-none rounded-md border border-border bg-background px-2 py-1 text-xs">
+                      <summary className="cursor-pointer list-none rounded-md border border-border bg-background px-3 py-2.5 text-sm sm:px-2 sm:py-1 sm:text-xs">
                         Actions
                       </summary>
 
                       <div className="absolute left-0 sm:right-0 sm:left-auto mt-1 w-40 rounded-md border border-border bg-background shadow-lg z-50">
                         <button
-                          className="block w-full px-3 py-2 text-left text-xs hover:bg-muted"
+                          className="block w-full px-4 py-3 text-left text-sm sm:px-3 sm:py-2 sm:text-xs hover:bg-muted"
                           onClick={(e) => {
                             (e.currentTarget.closest("details") as HTMLDetailsElement)?.removeAttribute("open");
                             openEditModal(c);
@@ -359,7 +359,7 @@ export function Contacts() {
                         </button>
 
                         <button
-                          className="block w-full px-3 py-2 text-left text-xs hover:bg-muted"
+                          className="block w-full px-4 py-3 text-left text-sm sm:px-3 sm:py-2 sm:text-xs hover:bg-muted"
                           onClick={(e) => {
                             (e.currentTarget.closest("details") as HTMLDetailsElement)?.removeAttribute("open");
                             updateAddressFromContact(c, !(addressMap[c.id]?.isVisible ?? true));
@@ -370,7 +370,7 @@ export function Contacts() {
                         <div className="my-1 border-t border-border" />
 
                         <button
-                          className="block w-full px-3 py-2 text-left text-xs text-red-600 hover:bg-muted"
+                          className="block w-full px-4 py-3 text-left text-sm text-red-600 sm:px-3 sm:py-2 sm:text-xs hover:bg-muted"
                           onClick={(e) => {
                             (e.currentTarget.closest("details") as HTMLDetailsElement)?.removeAttribute("open");
                             setContactToDelete(c.id);
@@ -381,7 +381,7 @@ export function Contacts() {
                         <div className="my-1 border-t border-border" />
                         <button
                           type="button"
-                          className="block w-full px-3 py-2 text-left text-xs hover:bg-muted"
+                          className="block w-full px-4 py-3 text-left text-sm sm:px-3 sm:py-2 sm:text-xs hover:bg-muted"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
@@ -469,7 +469,7 @@ export function Contacts() {
                   />
                   <button
                     type="button"
-                    className="rounded-md border px-2 py-1 text-xs"
+                    className="rounded-md border px-3 py-2.5 text-sm sm:px-2 sm:py-1 sm:text-xs"
                     onClick={handleAddTagFromInput}
                   >
                     Add
@@ -513,7 +513,7 @@ export function Contacts() {
                       {/* Row 1: chain + remove */}
                       <div className="flex items-center justify-between gap-2">
                         <select
-                          className="h-8 w-28 rounded-md border px-2 text-xs"
+                          className="h-11 sm:h-8 w-28 rounded-md border px-2 text-sm sm:text-xs"
                           value={w.chainId}
                           onChange={(e) => handleWalletChange(idx, "chainId", Number(e.target.value))}
                         >
@@ -526,7 +526,7 @@ export function Contacts() {
 
                         <button
                           type="button"
-                          className="shrink-0 whitespace-nowrap text-[11px] text-red-600 underline"
+                          className="shrink-0 whitespace-nowrap text-sm sm:text-[11px] text-red-600 underline"
                           onClick={() => handleRemoveWalletRow(idx)}
                         >
                           Remove
@@ -535,7 +535,7 @@ export function Contacts() {
 
                       {/* Row 2: address */}
                       <input
-                        className="w-full rounded-md border px-2 py-1 text-xs font-mono"
+                        className="w-full rounded-md border px-3 py-2.5 text-sm sm:px-2 sm:py-1 sm:text-xs font-mono"
                         placeholder="0x..."
                         value={w.address}
                         onChange={(e) => handleWalletChange(idx, "address", e.target.value)}
@@ -547,7 +547,7 @@ export function Contacts() {
 
                 <button
                   type="button"
-                  className="mt-1 rounded-md border px-2 py-1 text-xs"
+                  className="mt-1 rounded-md border px-3 py-2.5 text-sm sm:px-2 sm:py-1 sm:text-xs"
                   onClick={handleAddWalletRow}
                 >
                   + Add wallet
@@ -557,14 +557,14 @@ export function Contacts() {
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  className="rounded-md border px-3 py-1 text-xs"
+                  className="rounded-md border px-4 py-3 text-sm sm:px-3 sm:py-1 sm:text-xs"
                   onClick={closeModal}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-md bg-primary px-3 py-1 text-xs font-medium text-background"
+                  className="rounded-md bg-primary px-4 py-3 text-sm sm:px-3 sm:py-1 sm:text-xs font-medium text-background"
                 >
                   {editingContact ? "Save changes" : "Create contact"}
                 </button>
@@ -625,13 +625,13 @@ export function Contacts() {
 
             <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button
-                className="rounded-md border px-3 py-2 text-sm"
+                className="rounded-md border px-4 py-3 text-sm sm:px-3 sm:py-2"
                 onClick={() => setContactToDelete(null)}
               >
                 Cancel
               </button>
               <button
-                className="rounded-md bg-primary px-3 py-2 text-sm text-background"
+                className="rounded-md bg-primary px-4 py-3 text-sm sm:px-3 sm:py-2 text-background"
                 onClick={() => {
                   if (contactToDelete) {
                     deleteContact(contactToDelete);

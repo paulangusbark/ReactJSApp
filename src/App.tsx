@@ -13,6 +13,7 @@ const Terms        = React.lazy(() => import("./pages/legal").then(m => ({ defau
 const Privacy      = React.lazy(() => import("./pages/legal").then(m => ({ default: m.Privacy })));
 const Transactions = React.lazy(() => import("./pages/transaction").then(m => ({ default: m.Transactions })));
 const LoginPage    = React.lazy(() => import("./pages/LoginPage").then(m => ({ default: m.LoginPage })));
+const UserGuide    = React.lazy(() => import("./pages/userGuide").then(m => ({ default: m.UserGuide })));
 import { initWallet } from "./lib/wallets";
 import logo from "./assets/logo.png";
 import { FalconProvider } from "./crypto/falconProvider";
@@ -21,6 +22,7 @@ import { decodeSharePayload } from "./lib/sharePayload";
 import { importSharePayload } from "./lib/shareImporters";
 import { useFolios } from "./hooks/useFolios";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { OnboardingModal } from "./components/OnboardingModal";
 
 function QrScanModal({
   open,
@@ -210,9 +212,10 @@ function NavDropdown() {
               <NavDropItem to="/coins" label="Coins" onSelect={() => setOpen(false)} />
               <NavDropItem to="/legal/terms" label="Terms" onSelect={() => setOpen(false)} />
               <NavDropItem to="/legal/privacy" label="Privacy" onSelect={() => setOpen(false)} />
+              <NavDropItem to="/user-guide" label="User Guide" onSelect={() => setOpen(false)} />
               <div className="my-1 border-t border-border" />
               <button
-                className="block w-full rounded-lg px-3 py-2 text-left text-sm text-red-600 hover:bg-neutral-100"
+                className="block w-full rounded-lg px-3 py-3 sm:py-2 text-left text-sm text-red-600 hover:bg-neutral-100"
                 onClick={() => {
                   setOpen(false);
                   signOut();
@@ -242,7 +245,7 @@ function NavDropItem({
       to={to}
       onClick={onSelect}
       className={({ isActive }) =>
-        `block rounded-lg px-3 py-2 text-sm ${isActive
+        `block rounded-lg px-3 py-3 sm:py-2 text-sm ${isActive
           ? "bg-neutral-900 text-white"
           : "hover:bg-neutral-100"
         }`
@@ -255,10 +258,8 @@ function NavDropItem({
 
 
 // --- UI Shell & Navigation ---
-function AppShell({ children, address, domain, onOpenScan }: {
+function AppShell({ children, onOpenScan }: {
   children: React.ReactNode,
-  address?: string | null,
-  domain: string,
   onOpenScan: () => void,
 }) {
   return (
@@ -271,15 +272,18 @@ function AppShell({ children, address, domain, onOpenScan }: {
               alt="QuantumAccount"
               style={{ height: 32, width: "auto" }}
             />
-            {/* optional text next to it */}
-            {/* <span className="font-semibold">QuantumAccount</span> */}
           </Link>
           <div className="flex items-center gap-2">
             <Button size="sm" variant="outline" onClick={onOpenScan}>
               Scan
             </Button>&nbsp;
             <NavDropdown />&nbsp;
-            <WalletSwitcher domain={domain} />
+            <Link
+              to="/user-guide"
+              className="inline-flex h-11 sm:h-8 items-center rounded-md border border-border bg-card px-3 text-sm hover:bg-muted"
+            >
+              Help
+            </Link>
           </div>
         </div>
       </header>
@@ -296,11 +300,13 @@ function AppShell({ children, address, domain, onOpenScan }: {
 
 function AppContainer() {
   const [address, setAddress] = React.useState<string | null>(null);
-  const [domain, setDomain] = React.useState<string>("ETHEREUM SEPOLIA"); // needs to be changed to a selector
   const [error, setError] = React.useState<string | null>(null);
   const [scanOpen, setScanOpen] = React.useState(false);
+  const [onboardingDismissed, setOnboardingDismissed] = React.useState(
+    () => localStorage.getItem("cointrol_onboarding_seen") === "1"
+  );
 
-  const { folios, updateFolio } = useFolios();
+  const { folios, loading: foliosLoading, updateFolio } = useFolios();
 
   const handleDecoded = React.useCallback(async (qrText: string) => {
     try {
@@ -338,6 +344,16 @@ function AppContainer() {
     };
   }, []);
 
+  function handleOnboardingDismiss() {
+    localStorage.setItem("cointrol_onboarding_seen", "1");
+    setOnboardingDismissed(true);
+  }
+
+  const showOnboarding =
+    !onboardingDismissed &&
+    !foliosLoading &&
+    folios.length === 0;
+
   return (
     <>
       <QrScanModal
@@ -345,7 +361,11 @@ function AppContainer() {
         onClose={() => setScanOpen(false)}
         onDecoded={handleDecoded}
       />
-      <AppShell address={address} domain={domain} onOpenScan={() => setScanOpen(true)}>
+      <OnboardingModal
+        open={showOnboarding}
+        onDismiss={handleOnboardingDismiss}
+      />
+      <AppShell onOpenScan={() => setScanOpen(true)}>
         {error ? (
           <div className="p-6 text-red-700">
             <h1 className="text-lg font-semibold mb-2">Wallet initialisation failed</h1>
@@ -365,6 +385,7 @@ function AppContainer() {
             <Route path="addressbook" element={<AddressBook />} />
             <Route path="legal/terms" element={<Terms />} />
             <Route path="legal/privacy" element={<Privacy />} />
+            <Route path="user-guide" element={<UserGuide />} />
           </Routes>
         )}
       </AppShell>
@@ -388,21 +409,14 @@ function BottomNav() {
   return (
     <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background pb-[env(safe-area-inset-bottom)]">
       <div className="mx-auto grid h-14 max-w-md grid-cols-4 gap-2 px-2 text-center text-xs text-muted items-center">
-        <NavLink to="/dashboard">Home</NavLink>
-        <NavLink to="/transactions">Transactions</NavLink>
-        <NavLink to="/legal/terms">T&C</NavLink>
-        <NavLink to="/legal/privacy">Privacy</NavLink>
+        <NavLink to="/dashboard" className="flex h-full items-center justify-center">Home</NavLink>
+        <NavLink to="/transactions" className="flex h-full items-center justify-center">Transactions</NavLink>
+        <NavLink to="/legal/terms" className="flex h-full items-center justify-center">T&C</NavLink>
+        <NavLink to="/legal/privacy" className="flex h-full items-center justify-center">Privacy</NavLink>
       </div>
     </div>
   );
 }
-
-function WalletSwitcher({ domain }: { domain: string }) { // need to add function to switch domains
-  return (
-    <Button size="sm" variant="outline">{domain}</Button>
-  );
-}
-
 
 
 function ProtectedApp() {
@@ -435,6 +449,7 @@ export default function App() {
               <Route path="login" element={<LoginPage />} />
               <Route path="legal/terms" element={<Terms />} />
               <Route path="legal/privacy" element={<Privacy />} />
+              <Route path="user-guide" element={<UserGuide />} />
 
               {/* All other routes require authentication */}
               <Route path="/*" element={<ProtectedApp />} />
