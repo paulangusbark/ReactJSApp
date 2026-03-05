@@ -170,7 +170,6 @@ export async function fetchIncomingTransfers(
     }
   } catch (err) {
     console.error("fetchIncomingTransfers: ERC-20/721 getLogs failed", err);
-    throw err;
   }
 
   // ---- ERC-1155 TransferSingle events --------------------------------------
@@ -230,7 +229,6 @@ export async function fetchIncomingTransfers(
     }
   } catch (err) {
     console.error("fetchIncomingTransfers: ERC-1155 TransferSingle getLogs failed", err);
-    throw err;
   }
 
   // ---- ERC-1155 TransferBatch events ---------------------------------------
@@ -291,7 +289,6 @@ export async function fetchIncomingTransfers(
     }
   } catch (err) {
     console.error("fetchIncomingTransfers: ERC-1155 TransferBatch getLogs failed", err);
-    throw err;
   }
 
   // Persist the latest block so the next refresh only queries new blocks

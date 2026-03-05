@@ -82,6 +82,7 @@ export function Transactions() {
   const [isReading, setIsReading] = React.useState(false);
   const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [refreshError, setRefreshError] = React.useState<string | null>(null);
+  const refreshInFlightRef = React.useRef(false);
 
   // ENS reverse-lookup cache for history display (non-blocking, not persisted)
   const [ensLookupCache, setEnsLookupCache] = React.useState<Record<string, string | null>>({});
@@ -509,6 +510,8 @@ export function Transactions() {
   // --- Unified refresh: incoming transfers + outgoing tx hashes -------------
 
   async function handleRefresh() {
+    if (refreshInFlightRef.current) return;
+    refreshInFlightRef.current = true;
     setIsRefreshing(true);
     setRefreshError(null);
 
@@ -565,6 +568,7 @@ export function Transactions() {
     }
 
     setIsRefreshing(false);
+    refreshInFlightRef.current = false;
   }
 
   const abi: Abi | null = React.useMemo(() => {
