@@ -633,7 +633,7 @@ export function Coins() {
                 </button>&nbsp;
                 <button
                   type="submit"
-                  className="rounded-md bg-primary px-4 py-3 text-sm sm:px-3 sm:py-1 sm:text-xs font-medium text-background"
+                  className="rounded-md bg-primary px-4 py-3 text-sm sm:px-3 sm:py-1 sm:text-xs font-medium text-primary-foreground"
                   disabled={!editingCoin && !lookupDone && formStandard !== "NATIVE"}
                 >
                   &nbsp;{editingCoin ? "Save changes" : "Create coin"}&nbsp;
@@ -701,7 +701,7 @@ export function Coins() {
                 Cancel
               </button>
               <button
-                className="rounded-md bg-primary px-4 py-3 text-sm sm:px-3 sm:py-1 text-background"
+                className="rounded-md bg-primary px-4 py-3 text-sm sm:px-3 sm:py-1 text-primary-foreground"
                 onClick={async () => {
                   if (itemToDelete) {
                     const coinToDelete = coins.find(c => c.id === itemToDelete);

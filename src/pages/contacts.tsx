@@ -564,7 +564,7 @@ export function Contacts() {
                 </button>
                 <button
                   type="submit"
-                  className="rounded-md bg-primary px-4 py-3 text-sm sm:px-3 sm:py-1 sm:text-xs font-medium text-background"
+                  className="rounded-md bg-primary px-4 py-3 text-sm sm:px-3 sm:py-1 sm:text-xs font-medium text-primary-foreground"
                 >
                   {editingContact ? "Save changes" : "Create contact"}
                 </button>
@@ -631,7 +631,7 @@ export function Contacts() {
                 Cancel
               </button>
               <button
-                className="rounded-md bg-primary px-4 py-3 text-sm sm:px-3 sm:py-2 text-background"
+                className="rounded-md bg-primary px-4 py-3 text-sm sm:px-3 sm:py-2 text-primary-foreground"
                 onClick={() => {
                   if (contactToDelete) {
                     deleteContact(contactToDelete);

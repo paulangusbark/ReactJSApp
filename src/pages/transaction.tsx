@@ -1479,7 +1479,7 @@ export function Transactions() {
                 <button
                   type="button"
                   disabled={submitDisabled}
-                  className="rounded-md bg-primary px-3 py-1 text-xs font-medium text-background"
+                  className="rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground"
                   onClick={handleBuildCalldata}
                 >
                   &nbsp;Submit&nbsp;

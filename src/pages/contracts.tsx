@@ -499,7 +499,7 @@ export function Contracts() {
                 </button>&nbsp;
                 <button
                   type="submit"
-                  className="rounded-md bg-primary px-4 py-3 text-sm sm:px-3 sm:py-1 sm:text-xs font-medium text-background"
+                  className="rounded-md bg-primary px-4 py-3 text-sm sm:px-3 sm:py-1 sm:text-xs font-medium text-primary-foreground"
                 >
                   &nbsp;{editingContract ? "Save changes" : "Create contract"}&nbsp;
                 </button>
@@ -566,7 +566,7 @@ export function Contracts() {
                 Cancel
               </button>
               <button
-                className="rounded-md bg-primary px-4 py-3 text-sm sm:px-3 sm:py-1 text-background"
+                className="rounded-md bg-primary px-4 py-3 text-sm sm:px-3 sm:py-1 text-primary-foreground"
                 onClick={() => {
                   if (itemToDelete) {
                     deleteContract(itemToDelete);

@@ -10,6 +10,8 @@ The wallet you have been provided is a free wallet in a test environment and doe
 
 This guide explains every feature in plain, straightforward language.
 
+<video controls src="/user-guide/videos/00-overview-stripped.mp4" width="100%"></video>
+
 ---
 
 ## Table of Contents
@@ -45,12 +47,28 @@ When you first open the app you will see the **Sign In** screen. You can log in 
 
 Tap or click the button for the service you want to use. You will be taken through that service's standard login process. Once you are signed in, you will be brought back to the wallet automatically.
 
+![Sign in screen](/user-guide/images/01-sign-in.png)
+
 ### First-time sign-in
 
 The first time you sign in, the app will:
 
 1. Ask you to read and accept the **Terms and Conditions**. You must accept these before using the app.
 2. Automatically set up your wallet behind the scenes. This takes only a moment.
+
+![Terms and Conditions modal](/user-guide/images/01-terms-modal.png)
+
+### Welcome guide
+
+When you first sign in with an empty portfolio, a short welcome guide will walk you through the key features:
+
+![Welcome slide](/user-guide/images/00-onboarding-welcome.png)
+
+![Create your first account slide](/user-guide/images/00-onboarding-create.png)
+
+![Name your portfolio slide](/user-guide/images/00-onboarding-name.png)
+
+![Share your profile slide](/user-guide/images/00-onboarding-share.png)
 
 ### Staying signed in
 
@@ -61,6 +79,8 @@ The app keeps you signed in between visits. However, for your security, if you h
 ## 2. The Home Screen — Your Portfolio
 
 After signing in you will arrive at the **Portfolio** screen. This is the dashboard. It shows all your accounts and the coins they hold.
+
+![Portfolio screen](/user-guide/images/02-portfolio.png)
 
 ### What you can see
 
@@ -101,11 +121,15 @@ Each account in Cointrol is called a **folio**. A folio is your own personal sma
 
 > **Note**: Creating an account involves a blockchain transaction. This is handled automatically by the app.
 
+![Create account dialog](/user-guide/images/03-create-folio.png)
+
 ### Editing an account name
 
 1. Find the account in your portfolio list.
 2. Tap the menu (usually three dots or an arrow) next to the account.
 3. Choose **Edit label** and type the new name.
+
+![Edit label menu](/user-guide/images/03-edit-label.png)
 
 ### Deleting an account
 
@@ -138,10 +162,14 @@ You can send coins or tokens from any of your folios to another address.
 
    **Amount** — enter how many coins you want to send.
 
-4. Tap **Submit**. The app will ask you to confirm.
+4. Tap **Submit**.
 5. The transaction is signed and sent. You will see a status update as it is processed.
 
-> **Important**: Blockchain transactions are **permanent and cannot be reversed**. Always double-check the recipient address before confirming.
+> **Important**: Blockchain transactions are **permanent and cannot be reversed**. Always double-check the recipient address before tapping Submit.
+
+![Send coins form](/user-guide/images/04-send-form.png)
+
+<video controls src="/user-guide/videos/04-send-walkthrough-stripped.mp4" width="100%"></video>
 
 ### Approving spending
 
@@ -159,6 +187,8 @@ Advanced users can also interact directly with smart contracts. On the Transacti
 
 You can also call **read-only** functions (these do not cost anything and do not change the blockchain) to check information such as a balance or a setting on a contract.  These do not use any of the credited transactions to the account.
 
+![Call smart contract form](/user-guide/images/04-call-contract.png)
+
 ---
 
 ## 5. Viewing Transaction History
@@ -173,6 +203,8 @@ Each entry shows:
 - The recipient address (and their name if they are in your address book)
 - The transaction ID (called a "hash") — a unique reference for that transaction
 - A **View on Explorer** button that takes you to a public website where you can see the full details of that transaction on the blockchain
+
+![Transaction history list](/user-guide/images/05-tx-history.png)
 
 ### Searching and filtering
 
@@ -210,6 +242,8 @@ Each saved address displays:
 
 Address book entries are created automatically when you add contacts or contracts.
 
+![Address book screen](/user-guide/images/06-address-book.png)
+
 ---
 
 ## 7. Managing Contacts
@@ -231,6 +265,8 @@ The **Contacts** screen is where you store the details of people you send to, si
 4. Optionally add tags (for example "family", "work", "friends").
 5. Tap **Save**.
 
+![Add contact form](/user-guide/images/07-add-contact.png)
+
 ### Editing or deleting a contact
 
 Tap the contact in the list and choose **Edit** or **Delete**.
@@ -242,6 +278,8 @@ You can hide a contact from the address book without deleting them. Tap the **Ac
 ### Sharing a contact
 
 Tap the **Share** button on a contact to generate a QR code. Another person can scan this QR code with the Cointrol app to instantly save the contact details.
+
+![Share contact QR code](/user-guide/images/07-share-contact-qr.png)
 
 ### Searching and sorting
 
@@ -273,6 +311,8 @@ A **smart contract** is a program that lives on the blockchain. This screen lets
 
 Once saved, the contract will also appear in your **Address Book** and can be used from the **Transactions** screen.
 
+![Add contract form](/user-guide/images/08-add-contract.png)
+
 ### Sharing a contract
 
 Tap **Share** to generate a QR code with the contract details. Others can scan it to save the same contract. If the ABI is too large, it may be excluded in the sharing.
@@ -282,6 +322,8 @@ Tap **Share** to generate a QR code with the contract details. Others can scan i
 ## 9. Managing Coins and Tokens
 
 The **Coins** screen lets you track which tokens and coins are tracked in your wallet for sending and checking balances.
+
+![Coins list](/user-guide/images/09-coins-list.png)
 
 ### Types of tokens supported
 
@@ -298,6 +340,8 @@ The **Coins** screen lets you track which tokens and coins are tracked in your w
 3. Enter the contract address of the token.
 4. Tap **Look up** — the app will automatically fetch the token's name, symbol, and decimal places from the blockchain.
 5. Check the details are correct, then tap **Save**.
+
+![Add coin form](/user-guide/images/09-add-coin.png)
 
 ### Editing or deleting a token
 
@@ -319,6 +363,10 @@ QR codes are square patterns that can be scanned with a camera to transfer infor
 
 Tap the **Scan** button in the top navigation bar. Point your camera at the QR code. The app will read it and automatically import the information (for example, a coin, contact, or contract).
 
+![QR scanner](/user-guide/images/10-qr-scanner.png)
+
+<video controls src="/user-guide/videos/10-qr-scan-demo-stripped.mp4" width="100%"></video>
+
 ### Generating QR codes
 
 You can generate a QR code from:
@@ -330,6 +378,8 @@ You can generate a QR code from:
 
 Look for the **Share** button on the relevant screen to create a QR code.
 
+![Generated QR code](/user-guide/images/10-qr-generate.png)
+
 ---
 
 ## 11. Your Display Name and Profile
@@ -339,6 +389,8 @@ You can set a **display name** — a name that others will see when you share yo
 ### Setting your display name
 
 On the Portfolio screen, tap the display name area (or an edit icon near your profile). Type a name of at least two characters and save it.
+
+![Display name on portfolio screen](/user-guide/images/11-display-name.png)
 
 ### Sharing your profile
 
@@ -358,10 +410,14 @@ Each folio (account) has its own unique address on the blockchain. To find it:
 2. Tap the folio to open its details.
 3. Your wallet address is displayed and can be copied to the clipboard with the **Copy** button.
 
+![Copy wallet address](/user-guide/images/12-copy-address.png)
+
 ### Sharing your address
 
 - **Copy and paste** — copy the address and send it via message, email, or any other means.
 - **QR code** — tap **Share Profile** on the Portfolio screen to generate a QR code. The sender can scan this with the Cointrol app or any compatible wallet to get your address instantly.
+
+![Share profile QR code](/user-guide/images/12-share-profile-qr.png)
 
 > **Important**: Always double-check the address you share. Sending coins to a wrong address cannot be reversed.
 
@@ -385,6 +441,8 @@ To sign out of the app:
 2. Choose **Logout**.
 
 You will be returned to the sign-in screen. Your data is saved and will be available next time you sign in.
+
+![Navigation menu with logout](/user-guide/images/14-logout-menu.png)
 
 > The app will also log you out automatically after 30 minutes of inactivity for security.
 

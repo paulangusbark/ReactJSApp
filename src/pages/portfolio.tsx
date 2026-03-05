@@ -770,7 +770,7 @@ export function Folios() {
                 </button>&nbsp;
                 <button
                   type="submit"
-                  className="rounded-md bg-primary px-4 py-3 text-sm sm:px-3 sm:py-1 sm:text-xs font-medium text-background"
+                  className="rounded-md bg-primary px-4 py-3 text-sm sm:px-3 sm:py-1 sm:text-xs font-medium text-primary-foreground"
                   disabled={isPending}
                 >
                   &nbsp;{isPending
@@ -856,7 +856,7 @@ export function Folios() {
                 &nbsp;Cancel&nbsp;
               </button>&nbsp;
               <button
-                className="rounded-md bg-primary px-4 py-3 text-sm sm:px-3 sm:py-1 text-background"
+                className="rounded-md bg-primary px-4 py-3 text-sm sm:px-3 sm:py-1 text-primary-foreground"
                 onClick={() => {
                   if (folioToDelete) {
                     deleteFolio(folioToDelete);

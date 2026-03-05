@@ -26,7 +26,7 @@ const SLIDES: Slide[] = [
     title: "Create your first account",
     body: (
       <p className="text-sm text-muted-foreground leading-relaxed">
-        Tap the <strong>+</strong> button on the Portfolio screen to create your
+        Tap the <strong>Create account</strong> button on the Portfolio screen to create your
         first account (called a <em>folio</em>). Each folio is a smart-contract
         wallet on the blockchain. You can give it any name you like.
       </p>
@@ -36,9 +36,9 @@ const SLIDES: Slide[] = [
     title: "Name your portfolio",
     body: (
       <p className="text-sm text-muted-foreground leading-relaxed">
-        Once your account is created, tap the account name to edit it. A clear
-        display name (such as your first name) makes it easy to identify
-        yourself when sharing your profile with others.
+        Once your account is created, tap the <strong>Set display name</strong> button. Enter your
+        preferred name to be included when you share your profile through a QR code to other wallet
+        holders.
       </p>
     ),
   },
