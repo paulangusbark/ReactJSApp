@@ -346,16 +346,11 @@ export function Coins() {
 
                   {/* Col 2 */}
                   <div className="min-w-0 text-xs text-muted-foreground sm:pt-1">
-                    {c.symbol}
+                    {c.symbol} ({c.type}) on {CHAIN_NAMES[c.chainId] ?? c.chainId}
                   </div>
 
                   {/* Col 3 */}
                   <div className="min-w-0">
-                    <div className="text-xs text-muted-foreground">{c.type}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {CHAIN_NAMES[c.chainId] ?? c.chainId}
-                    </div>
-
                     {/* Address: wrap on mobile, truncate on desktop */}
                     <div
                       className="
@@ -388,7 +383,7 @@ export function Coins() {
 
                       <div className="absolute left-0 sm:right-0 sm:left-auto mt-1 w-40 rounded-md border border-border bg-background shadow-lg z-50">
                         <button
-                          className="block w-full px-4 py-3 text-left text-sm sm:px-3 sm:py-2 sm:text-xs hover:bg-muted"
+                          className="block w-full px-4 py-3 text-left text-sm sm:px-3 sm:py-2 sm:text-xs hover:bg-primary hover:text-primary-foreground"
                           onClick={(e) => {
                             (e.currentTarget.closest("details") as HTMLDetailsElement)?.removeAttribute("open");
                             openEditModal(c);
@@ -401,7 +396,7 @@ export function Coins() {
                           <>
                             <div className="my-1 border-t border-border" />
                             <button
-                              className="block w-full px-4 py-3 text-left text-sm text-red-600 sm:px-3 sm:py-2 sm:text-xs hover:bg-muted"
+                              className="block w-full px-4 py-3 text-left text-sm text-red-600 sm:px-3 sm:py-2 sm:text-xs hover:bg-primary hover:text-primary-foreground"
                               onClick={(e) => {
                                 (e.currentTarget.closest("details") as HTMLDetailsElement)?.removeAttribute("open");
                                 setItemToDelete(c.id);
@@ -416,7 +411,7 @@ export function Coins() {
 
                         <button
                           type="button"
-                          className="block w-full px-4 py-3 text-left text-sm sm:px-3 sm:py-2 sm:text-xs hover:bg-muted"
+                          className="block w-full px-4 py-3 text-left text-sm sm:px-3 sm:py-2 sm:text-xs hover:bg-primary hover:text-primary-foreground"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();

@@ -200,14 +200,14 @@ function SortableAddressCard({
                 </select>
                 <button
                   disabled={!selectedCoinId}
-                  className="rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-muted disabled:opacity-40"
+                  className="rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-primary hover:text-primary-foreground disabled:opacity-40"
                   onClick={() => onSendCoins(item, selectedCoinId)}
                 >
                   Send
                 </button>
                 <button
                   disabled={!selectedCoinId}
-                  className="rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-muted disabled:opacity-40"
+                  className="rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-primary hover:text-primary-foreground disabled:opacity-40"
                   onClick={() => onApproveCoins(item, selectedCoinId)}
                 >
                   Approve
@@ -235,7 +235,7 @@ function SortableAddressCard({
                 </select>
                 <button
                   disabled={!selectedFnName}
-                  className="rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-muted disabled:opacity-40"
+                  className="rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-primary hover:text-primary-foreground disabled:opacity-40"
                   onClick={() => onUseContract(item, selectedFnName)}
                 >
                   Use
@@ -256,7 +256,7 @@ function SortableAddressCard({
             {/* Hide button */}
             <button
               onClick={() => onHide(item.id)}
-              className="rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-muted"
+              className="rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-primary hover:text-primary-foreground"
             >
               Hide
             </button>

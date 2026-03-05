@@ -164,7 +164,7 @@ function PortfolioFiltersDropdown({
               </select>
               <button
                 type="button"
-                className="h-11 sm:h-9 rounded-md border border-border bg-card px-3 text-sm hover:bg-muted"
+                className="h-11 sm:h-9 rounded-md border border-border bg-card px-3 text-sm hover:bg-primary hover:text-primary-foreground"
                 onClick={() => { setTagSearch(""); setTags([]); setTagSearchMode("any"); }}
               >
                 Clear
@@ -631,12 +631,11 @@ export function Folios() {
 
                     {/* Col 2: Coin symbol */}
                     <div className="min-w-0 text-xs text-muted-foreground sm:pt-1">
-                      {coinSymbol}
+                      {coin?.name} --- {chainName}
                     </div>
 
                     {/* Col 3: Chain + balance */}
                     <div className="min-w-0">
-                      <div className="text-xs text-muted-foreground">{chainName}</div>
                       <div className="text-xs text-muted-foreground">
                         Balance: {balanceStr} {coinSymbol}
                       </div>
@@ -651,7 +650,7 @@ export function Folios() {
 
                         <div className="absolute left-0 sm:right-0 sm:left-auto mt-1 w-40 rounded-md border border-border bg-background shadow-lg z-50">
                           <button
-                            className="block w-full px-4 py-3 text-left text-sm sm:px-3 sm:py-2 sm:text-xs hover:bg-muted"
+                            className="block w-full px-4 py-3 text-left text-sm sm:px-3 sm:py-2 sm:text-xs hover:bg-primary hover:text-primary-foreground"
                             onClick={(e) => {
                               (e.currentTarget.closest("details") as HTMLDetailsElement)?.removeAttribute("open");
                               folio && openEditModal(folio);
@@ -663,7 +662,7 @@ export function Folios() {
 
                           {folio?.address && (
                             <button
-                              className="block w-full px-4 py-3 text-left text-sm sm:px-3 sm:py-2 sm:text-xs hover:bg-muted"
+                              className="block w-full px-4 py-3 text-left text-sm sm:px-3 sm:py-2 sm:text-xs hover:bg-primary hover:text-primary-foreground"
                               onClick={async (e) => {
                                 (e.currentTarget.closest("details") as HTMLDetailsElement)?.removeAttribute("open");
                                 try {
@@ -679,7 +678,7 @@ export function Folios() {
                           <div className="my-1 border-t border-border" />
 
                           <button
-                            className="block w-full px-4 py-3 text-left text-sm text-red-600 sm:px-3 sm:py-2 sm:text-xs hover:bg-muted"
+                            className="block w-full px-4 py-3 text-left text-sm text-red-600 sm:px-3 sm:py-2 sm:text-xs hover:bg-primary hover:text-primary-foreground"
                             onClick={(e) => {
                               (e.currentTarget.closest("details") as HTMLDetailsElement)?.removeAttribute("open");
                               setFolioToDelete(item.folioId);

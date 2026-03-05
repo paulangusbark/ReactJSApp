@@ -75,7 +75,7 @@ export function DisplayNameModal({
         />
         <div className="mt-4 flex justify-end gap-2"></div><br/>
         <div className="mt-4 flex justify-end gap-2">
-          <button type="button" className="h-9 rounded-md border border-border bg-card px-3 text-sm hover:bg-muted" onClick={onClose} disabled={saving}>
+          <button type="button" className="h-9 rounded-md border border-border bg-card px-3 text-sm hover:bg-primary hover:text-primary-foreground" onClick={onClose} disabled={saving}>
             &nbsp;Cancel&nbsp;
           </button>&nbsp;
           <button

@@ -127,9 +127,9 @@ Each account in Cointrol is called a **folio**. A folio is your own personal sma
 
 ### Editing an account name
 
-1. Find the account in your portfolio list.
-2. Tap the menu (usually three dots or an arrow) next to the account.
-3. Choose **Edit label** and type the new name.
+1. Any of the listed balances can be used to edit the account name.
+2. Tap the **Action** button.
+3. Choose **Edit** and type the new name.
 
 ![Edit label menu](/user-guide/images/03-edit-label.png)
 

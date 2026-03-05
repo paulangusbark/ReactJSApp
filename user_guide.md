@@ -113,9 +113,9 @@ Each account in Cointrol is called a **folio**. A folio is your own personal sma
 
 ### Editing an account name
 
-1. Find the account in your portfolio list.
-2. Tap the menu (usually three dots or an arrow) next to the account.
-3. Choose **Edit label** and type the new name.
+1. Any of the listed balances can be used to edit the account name.
+2. Tap the **Action** button.
+3. Choose **Edit** and type the new name.
 
 ![Edit label menu](/user-guide/images/03-edit-label.png)
 
@@ -151,7 +151,7 @@ You can send coins or tokens from any of your folios to another address.
    **Amount** — enter how many coins you want to send.
 
 4. Tap **Submit**.
-5. The transaction is signed and sent. You will see a status update as it is processed.
+5. The transaction is signed and sent. You will see the transaction appear in the page's list.
 
 > **Important**: Blockchain transactions are **permanent and cannot be reversed**. Always double-check the recipient address before tapping Submit.
 
@@ -202,13 +202,15 @@ Each entry shows:
 
 ### Refreshing pending transactions
 
-If a transaction is still being processed, tap **Refresh TX Hashes** to check whether it has been confirmed yet.
+If a transaction is still being processed, tap **Refresh** to check whether it has been confirmed yet.
+This same button will also check for any incoming transactions sent to your accounts.
 
 ---
 
 ## 6. Your Address Book
 
-The **Address Book** is where you save addresses that you regularly use with short cuts for sending coins and using smart contract functions.
+The **Address Book** is a consoidated list of your contacts and smart contracts.
+It includes short cuts for sending coins and using smart contract functions.
 
 ### What is shown
 
@@ -251,7 +253,7 @@ The **Contacts** screen is where you store the details of people you send to, si
 2. Tap **Add Contact**.
 3. Fill in the name and at least one wallet address.
 4. Optionally add tags (for example "family", "work", "friends").
-5. Tap **Save**.
+5. Tap **Create contact**.
 
 ![Add contact form](/user-guide/images/07-add-contact.png)
 
@@ -265,7 +267,7 @@ You can hide a contact from the address book without deleting them. Tap the **Ac
 
 ### Sharing a contact
 
-Tap the **Share** button on a contact to generate a QR code. Another person can scan this QR code with the Cointrol app to instantly save the contact details.
+Tap the **Share** button on a contact to generate a QR code. Another person can scan this QR code with the Cointrol app to instantly save the contact details.  Click the **Copy QR** button to add the QR code to your clipboard for easy pasting into messages or files. 
 
 ![Share contact QR code](/user-guide/images/07-share-contact-qr.png)
 
@@ -295,7 +297,7 @@ A **smart contract** is a program that lives on the blockchain. This screen lets
 1. Go to **Contracts** from the menu.
 2. Tap **Add Contract**.
 3. Enter the name, address, and network. Optionally paste in the ABI.
-4. Tap **Save**.
+4. Tap **Create contract**.
 
 Once saved, the contract will also appear in your **Address Book** and can be used from the **Transactions** screen.
 
@@ -303,7 +305,7 @@ Once saved, the contract will also appear in your **Address Book** and can be us
 
 ### Sharing a contract
 
-Tap **Share** to generate a QR code with the contract details. Others can scan it to save the same contract. If the ABI is too large, it may be excluded in the sharing.
+Tap **Share** to generate a QR code with the contract details. Others can scan it to save the same contract. If the ABI is too large, it may be excluded in the sharing.  Click the **Copy QR** button to copy the QR image to your clipboard.
 
 ---
 
@@ -327,7 +329,7 @@ The **Coins** screen lets you track which tokens and coins are tracked in your w
 2. Tap **Add Coin**.
 3. Enter the contract address of the token.
 4. Tap **Look up** — the app will automatically fetch the token's name, symbol, and decimal places from the blockchain.
-5. Check the details are correct, then tap **Save**.
+5. Check the details are correct, then tap **Create coin**.
 
 ![Add coin form](/user-guide/images/09-add-coin.png)
 
@@ -352,8 +354,6 @@ QR codes are square patterns that can be scanned with a camera to transfer infor
 Tap the **Scan** button in the top navigation bar. Point your camera at the QR code. The app will read it and automatically import the information (for example, a coin, contact, or contract).
 
 ![QR scanner](/user-guide/images/10-qr-scanner.png)
-
-<video controls src="/user-guide/videos/10-qr-scan-demo-stripped.mp4" width="100%"></video>
 
 ### Generating QR codes
 
@@ -429,8 +429,6 @@ To sign out of the app:
 2. Choose **Logout**.
 
 You will be returned to the sign-in screen. Your data is saved and will be available next time you sign in.
-
-![Navigation menu with logout](/user-guide/images/14-logout-menu.png)
 
 > The app will also log you out automatically after 30 minutes of inactivity for security.
 

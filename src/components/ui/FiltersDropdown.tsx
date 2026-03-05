@@ -157,7 +157,7 @@ export function FiltersDropdown({
 
                 <button
                   type="button"
-                  className="h-11 sm:h-9 rounded-md border border-border bg-card px-3 text-sm hover:bg-muted"
+                  className="h-11 sm:h-9 rounded-md border border-border bg-card px-3 text-sm hover:bg-primary hover:text-primary-foreground"
                   onClick={() => {
                     setTagSearch("");
                     setTags([]);

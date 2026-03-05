@@ -349,7 +349,7 @@ export function Contacts() {
 
                       <div className="absolute left-0 sm:right-0 sm:left-auto mt-1 w-40 rounded-md border border-border bg-background shadow-lg z-50">
                         <button
-                          className="block w-full px-4 py-3 text-left text-sm sm:px-3 sm:py-2 sm:text-xs hover:bg-muted"
+                          className="block w-full px-4 py-3 text-left text-sm sm:px-3 sm:py-2 sm:text-xs hover:bg-primary hover:text-primary-foreground"
                           onClick={(e) => {
                             (e.currentTarget.closest("details") as HTMLDetailsElement)?.removeAttribute("open");
                             openEditModal(c);
@@ -359,7 +359,7 @@ export function Contacts() {
                         </button>
 
                         <button
-                          className="block w-full px-4 py-3 text-left text-sm sm:px-3 sm:py-2 sm:text-xs hover:bg-muted"
+                          className="block w-full px-4 py-3 text-left text-sm sm:px-3 sm:py-2 sm:text-xs hover:bg-primary hover:text-primary-foreground"
                           onClick={(e) => {
                             (e.currentTarget.closest("details") as HTMLDetailsElement)?.removeAttribute("open");
                             updateAddressFromContact(c, !(addressMap[c.id]?.isVisible ?? true));
@@ -370,7 +370,7 @@ export function Contacts() {
                         <div className="my-1 border-t border-border" />
 
                         <button
-                          className="block w-full px-4 py-3 text-left text-sm text-red-600 sm:px-3 sm:py-2 sm:text-xs hover:bg-muted"
+                          className="block w-full px-4 py-3 text-left text-sm text-red-600 sm:px-3 sm:py-2 sm:text-xs hover:bg-primary hover:text-primary-foreground"
                           onClick={(e) => {
                             (e.currentTarget.closest("details") as HTMLDetailsElement)?.removeAttribute("open");
                             setContactToDelete(c.id);
@@ -381,7 +381,7 @@ export function Contacts() {
                         <div className="my-1 border-t border-border" />
                         <button
                           type="button"
-                          className="block w-full px-4 py-3 text-left text-sm sm:px-3 sm:py-2 sm:text-xs hover:bg-muted"
+                          className="block w-full px-4 py-3 text-left text-sm sm:px-3 sm:py-2 sm:text-xs hover:bg-primary hover:text-primary-foreground"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();

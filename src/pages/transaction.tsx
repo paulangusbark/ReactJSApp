@@ -1154,17 +1154,15 @@ export function Transactions() {
                     {/* Col 1: Direction + folio */}
                     <div className="min-w-0 font-medium">
                       {isIncoming ? (
-                        <span title="Incoming">← {folioName}</span>
+                        <span title="Incoming">Incoming to {folioName} on {chainName}</span>
                       ) : (
-                        <span title="Outgoing">→ {folioName}</span>
+                        <span title="Outgoing">Outbound from {folioName} on {chainName}</span>
                       )}
                     </div>
 
                     {/* Col 2: Coin + Chain */}
                     <div className="min-w-0 text-xs text-muted-foreground sm:pt-1">
-                      <div>{coinSymbol}</div>
-                      {item.amount && <div className="font-mono">{item.amount}</div>}
-                      <div>{chainName}</div>
+                      {item.amount && <div className="font-mono">{item.amount} {coinSymbol}</div>}
                     </div>
 
                     {/* Col 3: From/To + tx hashes */}
@@ -1233,7 +1231,7 @@ export function Transactions() {
                     {/* Col 4: Actions */}
                     <div className="justify-self-start sm:justify-self-end flex flex-col gap-1">
                       <button
-                        className="rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-primary hover:text-primary-foreground disabled:opacity-40 disabled:cursor-not-allowed"
                         disabled={!item.transactionHash || !domain?.transactionUrl}
                         onClick={() => {
                           window.open(`${domain!.transactionUrl}${item.transactionHash}`, "_blank", "noopener,noreferrer");
@@ -1243,7 +1241,7 @@ export function Transactions() {
                       </button>
                       {isIncoming && !alreadyContact && item.fromAddress && (
                         <button
-                          className="rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-muted"
+                          className="rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-primary hover:text-primary-foreground"
                           onClick={() => handleAddContact(item.chainId, item.fromAddress!, item.ensFromName)}
                         >
                           Add Contact
