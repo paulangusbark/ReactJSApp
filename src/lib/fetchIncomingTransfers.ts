@@ -56,7 +56,8 @@ export async function fetchIncomingTransfers(
 
   // Build coin map: resolved lowercase address → coin
   const allCoins = await getAllCoins();
-  const chainCoins = allCoins.filter(c => c.chainId === chainId);
+  // Exclude NATIVE coins: they have no contract address and emit no Transfer events
+  const chainCoins = allCoins.filter(c => c.chainId === chainId && c.type !== "NATIVE");
   const ensResolveCache = new Map<string, string | null>();
 
   async function resolveAddr(addr: string): Promise<string | null> {
@@ -83,6 +84,12 @@ export async function fetchIncomingTransfers(
     }
   }
 
+  const coinAddresses = [...coinByAddress.keys()] as Address[];
+  if (coinAddresses.length === 0) {
+    await set(lastFetchedBlockKey(chainId), Number(latestBlock));
+    return [];
+  }
+
   const folioAddresses = folios.map(f => f.address as Address);
   const results: Txn[] = [];
 
@@ -104,6 +111,7 @@ export async function fetchIncomingTransfers(
       event: parseAbiItem(
         "event Transfer(address indexed from, address indexed to, uint256 value)"
       ),
+      address: coinAddresses,
       args: { to: folioAddresses },
       fromBlock: startBlock,
       toBlock: latestBlock,
@@ -161,7 +169,8 @@ export async function fetchIncomingTransfers(
       }
     }
   } catch (err) {
-    console.warn("fetchIncomingTransfers: ERC-20/721 getLogs failed", err);
+    console.error("fetchIncomingTransfers: ERC-20/721 getLogs failed", err);
+    throw err;
   }
 
   // ---- ERC-1155 TransferSingle events --------------------------------------
@@ -170,6 +179,7 @@ export async function fetchIncomingTransfers(
       event: parseAbiItem(
         "event TransferSingle(address indexed operator, address indexed from, address indexed to, uint256 id, uint256 value)"
       ),
+      address: coinAddresses,
       args: { to: folioAddresses },
       fromBlock: startBlock,
       toBlock: latestBlock,
@@ -219,7 +229,8 @@ export async function fetchIncomingTransfers(
       }
     }
   } catch (err) {
-    console.warn("fetchIncomingTransfers: ERC-1155 TransferSingle getLogs failed", err);
+    console.error("fetchIncomingTransfers: ERC-1155 TransferSingle getLogs failed", err);
+    throw err;
   }
 
   // ---- ERC-1155 TransferBatch events ---------------------------------------
@@ -228,6 +239,7 @@ export async function fetchIncomingTransfers(
       event: parseAbiItem(
         "event TransferBatch(address indexed operator, address indexed from, address indexed to, uint256[] ids, uint256[] values)"
       ),
+      address: coinAddresses,
       args: { to: folioAddresses },
       fromBlock: startBlock,
       toBlock: latestBlock,
@@ -278,7 +290,8 @@ export async function fetchIncomingTransfers(
       }
     }
   } catch (err) {
-    console.warn("fetchIncomingTransfers: ERC-1155 TransferBatch getLogs failed", err);
+    console.error("fetchIncomingTransfers: ERC-1155 TransferBatch getLogs failed", err);
+    throw err;
   }
 
   // Persist the latest block so the next refresh only queries new blocks

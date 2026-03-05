@@ -455,7 +455,7 @@ export function Transactions() {
     }));
   }
 
-  async function handleSubmit(txStatus?: TxStatus, toAddress?: string, fromAddress?: string, amount?: string, functionName?: string) {
+  async function handleSubmit(txStatus?: TxStatus, toAddress?: string, fromAddress?: string, amount?: string, functionName?: string, receiverAddress?: string) {
     var addressId;
     if (transferOrTransaction) {
       addressId = selectContact?.id;
@@ -498,6 +498,7 @@ export function Transactions() {
       amount,
       ensToName,
       functionName,
+      receiverAddress,
     };
 
     await addTxn({ ...payload });
@@ -511,32 +512,34 @@ export function Transactions() {
     setIsRefreshing(true);
     setRefreshError(null);
 
-    try {
-      // Step 1: fetch incoming transfers for each domain
-      for (const domain of domains) {
-        const domainFolios = folios
-          .filter(f => f.chainId === domain.chainId)
-          .map(f => ({ id: f.id, address: f.address }));
+    const refreshErrors: string[] = [];
 
-        if (domainFolios.length === 0) continue;
+    // Step 1: fetch incoming transfers for each domain
+    for (const domain of domains) {
+      const domainFolios = folios
+        .filter(f => f.chainId === domain.chainId)
+        .map(f => ({ id: f.id, address: f.address }));
 
-        try {
-          const incoming = await fetchIncomingTransfers(
-            domainFolios,
-            domain.chainId,
-            domain.rpcUrl,
-            undefined,
-            mainnetRpcUrl
-          );
-          if (incoming.length > 0) {
-            await upsertIncomingTxns(incoming);
-          }
-        } catch (err) {
-          console.warn(`fetchIncomingTransfers failed for chain ${domain.chainId}`, err);
+      if (domainFolios.length === 0) continue;
+
+      try {
+        const incoming = await fetchIncomingTransfers(
+          domainFolios,
+          domain.chainId,
+          domain.rpcUrl,
+          undefined,
+          mainnetRpcUrl
+        );
+        if (incoming.length > 0) {
+          await upsertIncomingTxns(incoming);
         }
+      } catch (err: any) {
+        refreshErrors.push(`Chain ${domain.chainId}: ${err?.message ?? "Unknown error"}`);
       }
+    }
 
-      // Step 2: re-query bundler for outgoing txns missing transactionHash
+    // Step 2: re-query bundler for outgoing txns missing transactionHash
+    try {
       const pending = txns.filter(t => t.direction !== "incoming" && !t.transactionHash);
       for (const txn of pending) {
         const folio = folios.find(f => f.id === txn.folioId);
@@ -554,10 +557,14 @@ export function Transactions() {
         }
       }
     } catch (err: any) {
-      setRefreshError(err?.message ?? "Refresh failed");
-    } finally {
-      setIsRefreshing(false);
+      refreshErrors.push(`Bundler: ${err?.message ?? "Unknown error"}`);
     }
+
+    if (refreshErrors.length > 0) {
+      setRefreshError(refreshErrors.join(" | "));
+    }
+
+    setIsRefreshing(false);
   }
 
   const abi: Abi | null = React.useMemo(() => {
@@ -849,10 +856,10 @@ export function Transactions() {
         return;
       }
 
-      // For token transfers/approvals, toAddress should be the actual token
-      // recipient or spender, not the coin contract. Find the address input
-      // named "to" or "spender" and resolve it.
-      let actualToAddress: string | undefined = dest ?? undefined;
+      // For token transfers/approvals, extract the actual recipient/spender
+      // from the function args to store as receiverAddress. toAddress stays
+      // as dest (EVM-level destination: coin contract for ERC-20, recipient for native).
+      let receiverAddress: string | undefined;
       if (transferOrTransaction && !isNative && selectedFn) {
         for (let i = 0; i < selectedFn.inputs.length; i++) {
           const input = selectedFn.inputs[i];
@@ -860,7 +867,7 @@ export function Transactions() {
           const key = getInputName(input, i);
           if (key === "to" || key === "spender") {
             const resolved = await getResolvedAddress(key);
-            if (resolved) actualToAddress = resolved;
+            if (resolved) receiverAddress = resolved;
             break;
           }
         }
@@ -868,10 +875,11 @@ export function Transactions() {
 
       handleSubmit(
         currentStatus,
-        actualToAddress,
+        dest ?? undefined,
         selectFolio?.address ?? undefined,
         argValues["value"],
         selectedFnName,
+        receiverAddress,
       );
 
     } catch (err: any) {
@@ -1120,6 +1128,15 @@ export function Transactions() {
 
             const isIncoming = item.direction === "incoming";
 
+            const TRANSFER_FN_NAMES = new Set(["transfer", "transferFrom", "safeTransferFrom", "safeBatchTransferFrom", "approve"]);
+            const isTransferOrApproval = !!item.functionName && TRANSFER_FN_NAMES.has(item.functionName);
+            const senderDisplay = (!isIncoming && isTransferOrApproval && item.fromAddress)
+              ? getAddressDisplay(item.fromAddress, undefined)
+              : null;
+            const receiverDisplay = (!isIncoming && isTransferOrApproval && item.receiverAddress)
+              ? getAddressDisplay(item.receiverAddress, undefined)
+              : null;
+
             // Directional address display
             const fromDisplay = getAddressDisplay(item.fromAddress, item.ensFromName);
             const toDisplay = item.toAddress
@@ -1163,15 +1180,39 @@ export function Transactions() {
                           )}
                         </div>
                       ) : (
-                        <div className="text-xs text-muted-foreground">
-                          Tx Recipient:{" "}
-                          <span title={item.toAddress} className="font-mono">
-                            {toDisplay.primary}
-                          </span>
-                          {toDisplay.secondary && (
-                            <span className="ml-1 text-muted">({toDisplay.secondary})</span>
+                        <>
+                          <div className="text-xs text-muted-foreground">
+                            Tx Recipient:{" "}
+                            <span title={item.toAddress} className="font-mono">
+                              {toDisplay.primary}
+                            </span>
+                            {toDisplay.secondary && (
+                              <span className="ml-1 text-muted">({toDisplay.secondary})</span>
+                            )}
+                          </div>
+                          {senderDisplay && (
+                            <div className="text-xs text-muted-foreground">
+                              Sender:{" "}
+                              <span title={item.fromAddress} className="font-mono">
+                                {senderDisplay.primary}
+                              </span>
+                              {senderDisplay.secondary && (
+                                <span className="ml-1 text-muted">({senderDisplay.secondary})</span>
+                              )}
+                            </div>
                           )}
-                        </div>
+                          {receiverDisplay && (
+                            <div className="text-xs text-muted-foreground">
+                              Receiver:{" "}
+                              <span title={item.receiverAddress} className="font-mono">
+                                {receiverDisplay.primary}
+                              </span>
+                              {receiverDisplay.secondary && (
+                                <span className="ml-1 text-muted">({receiverDisplay.secondary})</span>
+                              )}
+                            </div>
+                          )}
+                        </>
                       )}
                       <div
                         className="mt-0.5 text-xs text-muted-foreground font-mono break-words sm:truncate sm:break-normal"

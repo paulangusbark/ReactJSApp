@@ -28,6 +28,7 @@ export type Txn = {
   ensFromName?: string;   // resolved ENS name for fromAddress, if any
   ensToName?: string;     // resolved ENS name for toAddress, if any
   functionName?: string;  // ABI function name called (e.g. "transfer", "approve")
+  receiverAddress?: string; // actual token recipient/spender (transfer "to", approve "spender")
 }
 
 // --- In-memory subscribers for live updates ---------------------------------
@@ -122,6 +123,7 @@ export async function addTxn(input: {
   tokenSymbol?: string;
   ensFromName?: string;
   ensToName?: string;
+  receiverAddress?: string;
 }): Promise<Txn[]> {
   const now = Date.now();
   const txns = await loadTxnsRaw();
@@ -144,6 +146,7 @@ export async function addTxn(input: {
     tokenSymbol: input.tokenSymbol,
     ensFromName: input.ensFromName,
     ensToName: input.ensToName,
+    receiverAddress: input.receiverAddress,
   };
 
   const updated = [...txns, newTxn];
