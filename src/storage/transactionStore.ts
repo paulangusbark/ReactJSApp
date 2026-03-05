@@ -27,6 +27,7 @@ export type Txn = {
   tokenSymbol?: string;   // cached symbol for display (e.g. "USDC")
   ensFromName?: string;   // resolved ENS name for fromAddress, if any
   ensToName?: string;     // resolved ENS name for toAddress, if any
+  functionName?: string;  // ABI function name called (e.g. "transfer", "approve")
 }
 
 // --- In-memory subscribers for live updates ---------------------------------

@@ -259,7 +259,9 @@ export function Transactions() {
       pendingPrefillFnRef.current = prefill.functionName ?? "transfer";
       setSelectedFnName("");
       if (addrIdx !== -1) {
-        pendingAddressFieldRef.current = { to: { mode: 'address', manual: '', selectedIndex: addrIdx } };
+        // "approve" uses "spender" as the address input key; all others use "to"
+        const addrKey = prefill.functionName === "approve" ? "spender" : "to";
+        pendingAddressFieldRef.current = { [addrKey]: { mode: 'address', manual: '', selectedIndex: addrIdx } };
       }
       setIsModalOpen(true);
 
@@ -453,7 +455,7 @@ export function Transactions() {
     }));
   }
 
-  async function handleSubmit(txStatus?: TxStatus, toAddress?: string, fromAddress?: string, amount?: string) {
+  async function handleSubmit(txStatus?: TxStatus, toAddress?: string, fromAddress?: string, amount?: string, functionName?: string) {
     var addressId;
     if (transferOrTransaction) {
       addressId = selectContact?.id;
@@ -495,6 +497,7 @@ export function Transactions() {
       fromAddress,
       amount,
       ensToName,
+      functionName,
     };
 
     await addTxn({ ...payload });
@@ -846,11 +849,29 @@ export function Transactions() {
         return;
       }
 
+      // For token transfers/approvals, toAddress should be the actual token
+      // recipient or spender, not the coin contract. Find the address input
+      // named "to" or "spender" and resolve it.
+      let actualToAddress: string | undefined = dest ?? undefined;
+      if (transferOrTransaction && !isNative && selectedFn) {
+        for (let i = 0; i < selectedFn.inputs.length; i++) {
+          const input = selectedFn.inputs[i];
+          if (input.type !== "address") continue;
+          const key = getInputName(input, i);
+          if (key === "to" || key === "spender") {
+            const resolved = await getResolvedAddress(key);
+            if (resolved) actualToAddress = resolved;
+            break;
+          }
+        }
+      }
+
       handleSubmit(
         currentStatus,
-        dest ?? undefined,
+        actualToAddress,
         selectFolio?.address ?? undefined,
         argValues["value"],
+        selectedFnName,
       );
 
     } catch (err: any) {
@@ -1143,7 +1164,7 @@ export function Transactions() {
                         </div>
                       ) : (
                         <div className="text-xs text-muted-foreground">
-                          To:{" "}
+                          Tx Recipient:{" "}
                           <span title={item.toAddress} className="font-mono">
                             {toDisplay.primary}
                           </span>
