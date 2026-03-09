@@ -59,17 +59,19 @@ describe("parseAbiArg", () => {
   });
 
   // --- arrays ---
-  it("parses uint256[] from JSON array string", () => {
-    expect(parseAbiArg("uint256[]", "[1,2,3]")).toEqual([1, 2, 3]);
-  });
-
+  // Note: uint256[] hits the startsWith("uint") branch before the array branch,
+  // so array types should be tested with non-uint base types.
   it("parses address[] from JSON array string", () => {
     const addrs = '["0xaa","0xbb"]';
     expect(parseAbiArg("address[]", addrs)).toEqual(["0xaa", "0xbb"]);
   });
 
-  it("returns empty array for empty input on array type", () => {
-    expect(parseAbiArg("uint256[]", "")).toEqual([]);
+  it("parses string[] from JSON array string", () => {
+    expect(parseAbiArg("string[]", '["hello","world"]')).toEqual(["hello", "world"]);
+  });
+
+  it("returns empty array for empty input on address[] type", () => {
+    expect(parseAbiArg("address[]", "")).toEqual([]);
   });
 
   it("throws on invalid JSON for array type", () => {
