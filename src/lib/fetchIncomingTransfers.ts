@@ -92,6 +92,7 @@ export async function fetchIncomingTransfers(
 
   const folioAddresses = folios.map(f => f.address as Address);
   const results: Txn[] = [];
+  const fetchErrors: Error[] = [];
 
   // Helper: fetch block timestamps in bulk
   const blockTimestampCache = new Map<bigint, number>();
@@ -170,6 +171,7 @@ export async function fetchIncomingTransfers(
     }
   } catch (err) {
     console.error("fetchIncomingTransfers: ERC-20/721 getLogs failed", err);
+    fetchErrors.push(err as Error);
   }
 
   // ---- ERC-1155 TransferSingle events --------------------------------------
@@ -229,6 +231,7 @@ export async function fetchIncomingTransfers(
     }
   } catch (err) {
     console.error("fetchIncomingTransfers: ERC-1155 TransferSingle getLogs failed", err);
+    fetchErrors.push(err as Error);
   }
 
   // ---- ERC-1155 TransferBatch events ---------------------------------------
@@ -289,6 +292,12 @@ export async function fetchIncomingTransfers(
     }
   } catch (err) {
     console.error("fetchIncomingTransfers: ERC-1155 TransferBatch getLogs failed", err);
+    fetchErrors.push(err as Error);
+  }
+
+  if (fetchErrors.length > 0) {
+    // Don't advance the cursor — next refresh will retry from the same startBlock
+    throw fetchErrors[0];
   }
 
   // Persist the latest block so the next refresh only queries new blocks
