@@ -10,7 +10,7 @@ type UseAddressListOptions = {
 };
 
 export function useAddressList(options: UseAddressListOptions = {}) {
-  const { address, loading, error, addAddress, updateAddress, deleteAddress, clearAddress } =
+  const { address, loading, error, addAddress, updateAddress, reorderAddresses, deleteAddress, clearAddress } =
     useAddress();
 
   const { query = "", sortMode = "createdAsc", tags=[], tagMode = "any" } = options;
@@ -48,6 +48,7 @@ export function useAddressList(options: UseAddressListOptions = {}) {
     error,
     addAddress,
     updateAddress,
+    reorderAddresses,
     deleteAddress,
     clearAddress,
   };

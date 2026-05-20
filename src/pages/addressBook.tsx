@@ -27,6 +27,7 @@ export function AddressBook() {
     addAddress,
     deleteAddress,
     updateAddress,
+    reorderAddresses,
   } = useAddressList({ query, sortMode, tags, tagMode });
 
   // Unfiltered list — needed for operations that must consider all visible items
@@ -61,13 +62,7 @@ export function AddressBook() {
   const isFilterActive = query.trim().length > 0 || tags.length > 0;
 
   async function handleReorder(updated: Address[]) {
-    // updated is the *visible* list in the new order
-    // assign indexOrder based on new position
-    await Promise.all(
-      updated.map((addr, idx) =>
-        updateAddress(addr.id, { indexOrder: idx })
-      )
-    );
+    await reorderAddresses(updated.map((addr, idx) => ({ id: addr.id, indexOrder: idx })));
   }
 
   async function handleHide(id: string) {

@@ -4,6 +4,7 @@ import {
   getAllAddress,
   addAddress as storeAddAddress,
   updateAddress as storeUpdateAddress,
+  reorderAddresses as storeReorderAddresses,
   deleteAddress as storeDeleteAddress,
   clearAddress as storeClearAddress,
   subscribeToAddress,
@@ -15,6 +16,7 @@ type UseAddressResult = {
   error: string | null;
   addAddress: typeof storeAddAddress;
   updateAddress: typeof storeUpdateAddress;
+  reorderAddresses: typeof storeReorderAddresses;
   deleteAddress: typeof storeDeleteAddress;
   clearAddress: typeof storeClearAddress;
 };
@@ -61,6 +63,7 @@ export function useAddress(): UseAddressResult {
     error,
     addAddress: storeAddAddress,
     updateAddress: storeUpdateAddress,
+    reorderAddresses: storeReorderAddresses,
     deleteAddress: storeDeleteAddress,
     clearAddress: storeClearAddress,
   };

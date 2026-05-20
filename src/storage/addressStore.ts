@@ -151,6 +151,21 @@ export async function updateAddress(
   return updated;
 }
 
+export async function reorderAddresses(
+  reordered: Pick<Address, "id" | "indexOrder">[]
+): Promise<Address[]> {
+  const addresses = await loadAddressRaw();
+  const orderMap = new Map(reordered.map(r => [r.id, r.indexOrder]));
+  const now = Date.now();
+  const updated = addresses.map(a =>
+    orderMap.has(a.id)
+      ? { ...a, indexOrder: orderMap.get(a.id)!, updatedAt: now }
+      : a
+  );
+  await saveAddressRaw(updated);
+  return updated;
+}
+
 export async function deleteAddress(id: string): Promise<Address[]> {
   const addresss = await loadAddressRaw();
   const updated = addresss.filter(c => c.id !== id);
