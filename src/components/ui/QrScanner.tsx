@@ -36,6 +36,11 @@ export function QrScanner({
           }
         }
       );
+      // If cleanup ran while waiting for camera permission, stop immediately
+      if (stoppedRef.current) {
+        controlsRef.current?.stop();
+        controlsRef.current = null;
+      }
     })();
 
     return () => {
@@ -142,10 +147,10 @@ export function QrScanner({
         <>
           <label className="flex flex-col items-center justify-center w-full rounded-lg border-2 border-dashed border-border bg-background p-6 cursor-pointer hover:bg-muted text-center gap-2">
             <span className="text-sm text-foreground">Choose a transaction file</span>
-            <span className="text-xs text-muted-foreground">.txt files exported from the app</span>
+            <span className="text-xs text-muted-foreground">.json files exported from the app</span>
             <input
               type="file"
-              accept=".txt,text/plain"
+              accept=".json,application/json"
               className="sr-only"
               onChange={handleTextFile}
             />
