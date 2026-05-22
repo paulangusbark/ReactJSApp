@@ -11,7 +11,7 @@ describe("getGasProfile", () => {
 
   it("returns correct values for Falcon-1024", () => {
     const p = getGasProfile(1024);
-    expect(p.verificationGasLimit).toBe(9_900_000n);
+    expect(p.verificationGasLimit).toBe(15_000_000n);
     expect(p.keyRotationCallGasLimit).toBe(2_800_000n);
     expect(p.defaultCallGasFallback).toBe(500_000n);
   });

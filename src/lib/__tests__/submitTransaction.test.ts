@@ -436,6 +436,6 @@ describe("useTx store", () => {
     const submittedOp = submitSpy.mock.calls[0][0] as PackedUserOperation;
     const packed = BigInt(submittedOp.accountGasLimits);
     const verificationGas = packed >> 128n;
-    expect(verificationGas).toBe(9_900_000n);
+    expect(verificationGas).toBe(15_000_000n);
   });
 });
