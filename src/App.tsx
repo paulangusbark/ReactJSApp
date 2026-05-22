@@ -490,9 +490,11 @@ function AppContainer() {
           matches={pendingContactImport.matches}
           onUpdate={async (matchId, mergedWallets) => {
             await applyContactUpdate(matchId, mergedWallets);
+            setPendingContactImport(null);
           }}
           onCombine={async (matchId, mergedWallets) => {
             await applyContactUpdate(matchId, mergedWallets);
+            setPendingContactImport(null);
           }}
           onAddAsNew={async () => {
             await applyAddNewContact(pendingContactImport.incoming);
