@@ -1677,7 +1677,9 @@ function CreateAttestationModal({
 
   function getContactAddress(): string | null {
     if (!selectedContactKey) return null;
-    const [cId, wIdxStr] = selectedContactKey.split(":");
+    const lastColon = selectedContactKey.lastIndexOf(":");
+    const cId = selectedContactKey.slice(0, lastColon);
+    const wIdxStr = selectedContactKey.slice(lastColon + 1);
     const contact = contacts.find(c => c.id === cId);
     return contact?.wallets?.[Number(wIdxStr)]?.address ?? null;
   }
@@ -2210,7 +2212,9 @@ function InitiateRecoveryModal({
   function getEffectiveAccount(): string | null {
     if (accountMode === "contact") {
       if (!selectedContactKey) return null;
-      const [cId, wIdxStr] = selectedContactKey.split(":");
+      const lastColon = selectedContactKey.lastIndexOf(":");
+      const cId = selectedContactKey.slice(0, lastColon);
+      const wIdxStr = selectedContactKey.slice(lastColon + 1);
       return contacts.find(c => c.id === cId)?.wallets?.[Number(wIdxStr)]?.address ?? null;
     }
     return accountResolved;
