@@ -274,13 +274,13 @@ export async function getSecretKey(keypairId: string): Promise<Uint8Array | null
 export async function predictAddressFromKeypair(
   keypairId: string,
   salt: Hex,
-  domain: { factory: string; creationCode: string }
+  domain: { factory: string; initCodeHash: string }
 ): Promise<string> {
   const pk = await getPublicKey(keypairId);
   if (!pk) throw new Error(`Keypair ${keypairId} not found`);
   return predictQuantumAccountAddress({
     factory:      domain.factory as Hex,
     salt,
-    creationCode: domain.creationCode as Hex,
+    initCodeHash: domain.initCodeHash as Hex,
   });
 }

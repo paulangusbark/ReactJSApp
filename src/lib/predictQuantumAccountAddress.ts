@@ -9,20 +9,15 @@ import {
 /**
  * Precompute the CREATE2 address for a QuantumAccount.
  *
- * With the new factory-only initialize() pattern, the initCode is just
- * the raw creation bytecode (no constructor args appended), so the
- * predicted address depends only on factory + salt + creationCode.
- *
- * The creationCode comes from the FalconDomain record.
+ * initCodeHash = keccak256(creationCode ++ abi.encode(recoverableFactory))
+ * Use GenerateInitCodeHash.s.sol to produce the correct value for a given factory.
  */
 export function predictQuantumAccountAddress(params: {
   factory: Address;
   salt: Hex; // 32-byte hex
-  creationCode: Hex; // contract creation bytecode from FalconDomain
+  initCodeHash: Hex; // keccak256(creationCode ++ abi.encode(recoverableFactory))
 }): Address {
-  const { factory, salt, creationCode } = params;
-
-  const initCodeHash = keccak256(creationCode);
+  const { factory, salt, initCodeHash } = params;
 
   const salt32 = pad(salt, { size: 32 });
 

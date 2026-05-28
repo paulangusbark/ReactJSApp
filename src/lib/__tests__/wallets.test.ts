@@ -94,7 +94,7 @@ const DOMAIN_512 = {
   name: "test.domain",
   chainId: 11155111,
   entryPoint: "0x4337084D9E255Ff0702461CF8895CE9E3b5Ff108" as `0x${string}`,
-  falconDomain: [{ factory: "0xfactory", falcon: "0xfalcon", falconLevel: 512 as const, creationCode: "0xcc" }],
+  falconDomain: [{ factory: "0xfactory", falcon: "0xfalcon", falconLevel: 512 as const, initCodeHash: "0xcc" }],
   bundler: "0xbundler",
   rpcUrl: "http://localhost:8545",
   transactionUrl: "http://localhost/tx/",

@@ -40,7 +40,7 @@ export interface UpdatePublicKey { sender: `0x${string}`; domain: string; oldKey
 export interface GenericResponse { success: boolean; result: string }
 export interface TxHashRequest { sender: `0x${string}`; userOpHash: `0x${string}` }
 export interface TxReceipt { success: boolean; txHash: `0x${string}` }
-export interface BundlerFalconDomain { factory: string; falcon: string; falconLevel: string; creationCode: string }
+export interface BundlerFalconDomain { factory: string; falcon: string; falconLevel: string; initCodeHash: string }
 export interface BundlerPaymaster { address: string; name: string; chainId: number; type: number; bundler: string; createdAt: number; updatedAt: number }
 export interface BundlerDomain {
   name: string; chainId: number; entryPoint: string; isTest: number;

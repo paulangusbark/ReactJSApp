@@ -7,7 +7,7 @@ import { BundlerAPI, BundlerDomain } from "@/lib/submitTransaction";
 
 function domainKey() { return `cointrol:domains:v1:${getCurrentUser()}`; }
 function domainSchemaVersionKey() { return `cointrol:domains:schemaVersion:${getCurrentUser()}`; }
-const CURRENT_DOMAIN_SCHEMA_VERSION = 4;
+const CURRENT_DOMAIN_SCHEMA_VERSION = 5;
 
 export type Domain = {
   name: string;           // label for the domain
@@ -26,7 +26,7 @@ export type FalconDomain = {
   factory: string;
   falcon: string;
   falconLevel: FalconLevel;
-  creationCode: string;
+  initCodeHash: string;
 }
 
 
@@ -106,7 +106,22 @@ async function ensureDomainSchemaMigrated(): Promise<void> {
       })),
     }));
     await set(domainKey(), migrated);
-    await setDomainsSchemaVersion(4);
+    storedVersion = 4;
+  }
+
+  if (storedVersion < 5) {
+    // v4 → v5: rename creationCode → initCodeHash on each FalconDomain entry.
+    // initCodeHash = keccak256(creationCode ++ abi.encode(recoverableFactory));
+    // existing entries had raw bytecode which was also incorrect, so reset to "".
+    const migrated = domains.map((d: any) => ({
+      ...d,
+      falconDomain: (d.falconDomain ?? []).map((fd: any) => {
+        const { creationCode: _, ...rest } = fd;
+        return { ...rest, initCodeHash: "" };
+      }),
+    }));
+    await set(domainKey(), migrated);
+    await setDomainsSchemaVersion(5);
   }
 }
 
@@ -202,7 +217,7 @@ function bundlerDomainToLocal(bd: BundlerDomain): Domain {
       factory: fd.factory,
       falcon: fd.falcon,
       falconLevel: Number(fd.falconLevel) as FalconLevel,
-      creationCode: fd.creationCode,
+      initCodeHash: fd.initCodeHash,
     })),
     paymaster: bd.paymaster.map(p => ({
       address: p.address,
