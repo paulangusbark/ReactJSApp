@@ -602,30 +602,73 @@ function ProtectedApp() {
   return <AppContainer />;
 }
 
+class ChunkErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { failed: boolean }
+> {
+  state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  componentDidCatch(error: unknown) {
+    const isChunkError =
+      error instanceof Error &&
+      (error.message.includes('dynamically imported module') ||
+       error.message.includes('Failed to fetch') ||
+       error.name === 'ChunkLoadError');
+
+    if (isChunkError && !sessionStorage.getItem('chunkReload')) {
+      sessionStorage.setItem('chunkReload', '1');
+      window.location.reload();
+    }
+  }
+
+  render() {
+    if (this.state.failed) {
+      return (
+        <div className="min-h-dvh flex items-center justify-center text-sm text-muted-foreground">
+          Something went wrong loading the page.{' '}
+          <button className="underline ml-1" onClick={() => window.location.reload()}>Refresh</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function App() {
+  React.useEffect(() => {
+    // App mounted successfully — clear the reload guard so future deploys can trigger a reload again.
+    sessionStorage.removeItem('chunkReload');
+  }, []);
+
   return (
     <ThemeProvider>
     <HashRouter>
       <ScrollToTop />
       <AuthProvider>
         <FalconProvider>
-          <React.Suspense fallback={
-            <div className="min-h-dvh flex items-center justify-center text-sm text-muted-foreground">
-              Loading…
-            </div>
-          }>
-            <Routes>
-              {/* Public routes */}
-              <Route path="login" element={<LoginPage />} />
-              <Route path="register" element={<RegisterPage />} />
-              <Route path="legal/terms" element={<Terms />} />
-              <Route path="legal/privacy" element={<Privacy />} />
-              <Route path="user-guide" element={<UserGuide />} />
+          <ChunkErrorBoundary>
+            <React.Suspense fallback={
+              <div className="min-h-dvh flex items-center justify-center text-sm text-muted-foreground">
+                Loading…
+              </div>
+            }>
+              <Routes>
+                {/* Public routes */}
+                <Route path="login" element={<LoginPage />} />
+                <Route path="register" element={<RegisterPage />} />
+                <Route path="legal/terms" element={<Terms />} />
+                <Route path="legal/privacy" element={<Privacy />} />
+                <Route path="user-guide" element={<UserGuide />} />
 
-              {/* All other routes require authentication */}
-              <Route path="/*" element={<ProtectedApp />} />
-            </Routes>
-          </React.Suspense>
+                {/* All other routes require authentication */}
+                <Route path="/*" element={<ProtectedApp />} />
+              </Routes>
+            </React.Suspense>
+          </ChunkErrorBoundary>
         </FalconProvider>
       </AuthProvider>
     </HashRouter>

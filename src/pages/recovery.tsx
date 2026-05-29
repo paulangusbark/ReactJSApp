@@ -558,25 +558,30 @@ function CreateRecoveryModal({
         return;
       }
 
-      // Discover the new recoverable address by diffing on-chain list with local store
+      // Discover the new recoverable address by diffing on-chain list with local store.
+      // Poll with retries because the bundler reports success as soon as the tx is submitted,
+      // before the block is mined and the RPC reflects the updated contract state.
       let newAddress: string | null = null;
-      try {
-        const publicClient = createPublicClient({ transport: http(domain.rpcUrl) });
-        const onChainAddresses = await publicClient.readContract({
-          address: selectedFolio.address as Address,
-          abi: quantumAccountAbi,
-          functionName: "getRecoverables",
-          account: domain.entryPoint as Address,
-        }) as Address[];
-        const localRecoveries = await getAllRecoveries();
-        const existingAddresses = new Set(
-          localRecoveries
-            .filter(r => r.name.toLowerCase() === selectedFolio.address.toLowerCase() && r.chainId === selectedFolio.chainId)
-            .map(r => r.recoverableAddress.toLowerCase())
-        );
-        newAddress = onChainAddresses.find(a => !existingAddresses.has(a.toLowerCase())) ?? null;
-      } catch {
-        // Non-fatal — store with empty address; user can sync via "Fetch recoverable details"
+      for (let attempt = 0; attempt < 10; attempt++) {
+        try {
+          if (attempt > 0) await new Promise(r => setTimeout(r, 3000));
+          const publicClient = createPublicClient({ transport: http(domain.rpcUrl) });
+          const onChainAddresses = await publicClient.readContract({
+            address: selectedFolio.address as Address,
+            abi: quantumAccountAbi,
+            functionName: "getRecoverables",
+          }) as Address[];
+          const localRecoveries = await getAllRecoveries();
+          const existingAddresses = new Set(
+            localRecoveries
+              .filter(r => r.name.toLowerCase() === selectedFolio.address.toLowerCase() && r.chainId === selectedFolio.chainId)
+              .map(r => r.recoverableAddress.toLowerCase())
+          );
+          const found = onChainAddresses.find(a => !existingAddresses.has(a.toLowerCase())) ?? null;
+          if (found !== null) { newAddress = found; break; }
+        } catch {
+          // Non-fatal — keep retrying; if all attempts fail, store with empty address
+        }
       }
 
       await onSubmit({
