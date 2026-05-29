@@ -16,7 +16,7 @@ import { buildRecoveryShare } from "@/lib/shareBuilders";
 import { useTx, ADMIN_KEY, BundlerAPI } from "@/lib/submitTransaction";
 import { encodeFunctionData, createPublicClient, http, keccak256, toHex, bytesToHex, type Hex, type Address } from "viem";
 import { fetchRecoverableDetails } from "@/lib/fetchRecoverableDetails";
-import { paymasterAbi, quantumAccountAbi, recoverableAbi } from "@/lib/abiTypes";
+import { quantumAccountAbi, recoverableAbi } from "@/lib/abiTypes";
 import { listKeypairs, getPublicKey, generateAndStoreKeypair, setKeypairFolioName, KeypairMeta } from "@/storage/keyStore";
 import { addAttestation, AttestationRecord } from "@/storage/attestationStore";
 import { addFolio, Wallet as FolioWallet } from "@/storage/folioStore";
@@ -65,7 +65,6 @@ function buildRecoveryExportText(
   lines.push(
     `Network: ${chainName} (${r.chainId})`,
     `Recoverable Contract: ${r.recoverableAddress}`,
-    `Paymaster: ${r.paymaster}`,
     `Threshold: ${r.threshold} of ${r.participants.length}`,
     `Status: ${r.status ? "Enabled" : "Disabled"}`,
     "",
@@ -90,7 +89,7 @@ type ImportPrefill = {
   name: string;
   chainId: number;
   recoverableAddress: string;
-  paymaster: string;
+  paymaster?: string;
   threshold: number;
   status: boolean;
   participants: string[];
@@ -478,7 +477,6 @@ type CreateRecoveryModalProps = {
   onClose: () => void;
   onSubmit: (input: {
     name: string;
-    paymaster: string;
     recoverableAddress: string | null;
     participants: string[];
     threshold: number;
@@ -546,7 +544,6 @@ function CreateRecoveryModal({
         abi: quantumAccountAbi,
         functionName: "createRecoverable",
         args: [
-          selectedFolio.paymaster as `0x${string}`,
           BigInt(threshold),
           resolvedParticipants as `0x${string}`[],
         ],
@@ -584,7 +581,6 @@ function CreateRecoveryModal({
 
       await onSubmit({
         name: selectedFolio.address,
-        paymaster: selectedFolio.paymaster,
         recoverableAddress: newAddress,
         participants: resolvedParticipants,
         threshold,
@@ -660,7 +656,6 @@ function CreateRecoveryModal({
             <div className="rounded-md border border-border bg-card px-3 py-2 text-xs space-y-0.5">
               <div><span className="text-muted">Chain:</span> {chainMap.get(selectedFolio.chainId) ?? "Unknown"} ({selectedFolio.chainId})</div>
               <div><span className="text-muted">Folio address:</span> <span className="font-mono">{selectedFolio.address}</span></div>
-              <div><span className="text-muted">Paymaster:</span> <span className="font-mono">{shortenAddress(selectedFolio.paymaster)}</span></div>
             </div>
           )}
 
@@ -725,7 +720,6 @@ type ImportRecoveryModalProps = {
   onClose: () => void;
   onSubmit: (input: {
     name: string;
-    paymaster: string | null;
     recoverableAddress: string | null;
     participants: string[];
     threshold: number;
@@ -752,7 +746,6 @@ function ImportRecoveryModal({
         contactWalletIdx: 0,
         manualName: "",
         manualChainId: 0,
-        manualPaymaster: "",
       };
     }
     const matchFolio = folios.find(
@@ -766,7 +759,6 @@ function ImportRecoveryModal({
         contactWalletIdx: 0,
         manualName: "",
         manualChainId: 0,
-        manualPaymaster: "",
       };
     }
     for (const c of contacts) {
@@ -781,7 +773,6 @@ function ImportRecoveryModal({
           contactWalletIdx: idx,
           manualName: "",
           manualChainId: 0,
-          manualPaymaster: prefill.paymaster,
         };
       }
     }
@@ -792,7 +783,6 @@ function ImportRecoveryModal({
       contactWalletIdx: 0,
       manualName: prefill.name,
       manualChainId: prefill.chainId,
-      manualPaymaster: prefill.paymaster,
     };
   }
 
@@ -804,7 +794,6 @@ function ImportRecoveryModal({
   const [contactWalletIdx, setContactWalletIdx] = React.useState(init.contactWalletIdx);
   const [manualName, setManualName] = React.useState(init.manualName);
   const [manualChainId, setManualChainId] = React.useState(init.manualChainId);
-  const [manualPaymaster, setManualPaymaster] = React.useState(init.manualPaymaster);
   const [recoverableAddress, setRecoverableAddress] = React.useState(prefill?.recoverableAddress ?? "");
   const [threshold, setThreshold] = React.useState(prefill?.threshold ?? 1);
   const [status, setStatus] = React.useState(prefill?.status ?? false);
@@ -826,11 +815,6 @@ function ImportRecoveryModal({
     if (accountType === "contact") return (contacts.find(c => c.id === contactId)?.wallets ?? [])[contactWalletIdx]?.chainId ?? 0;
     return manualChainId;
   }, [accountType, selectedFolioId, contactId, contactWalletIdx, manualChainId, folios, contacts]);
-
-  const derivedPaymaster = React.useMemo((): string => {
-    if (accountType === "folio") return folios.find(f => f.id === selectedFolioId)?.paymaster ?? "";
-    return manualPaymaster;
-  }, [accountType, selectedFolioId, manualPaymaster, folios]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -871,7 +855,6 @@ function ImportRecoveryModal({
     try {
       await onSubmit({
         name: derivedName,
-        paymaster: derivedPaymaster || null,
         recoverableAddress: recoverableAddress.trim() || null,
         participants: resolvedParticipants,
         threshold,
@@ -1025,19 +1008,6 @@ function ImportRecoveryModal({
             )}
           </div>
 
-          {/* ── Paymaster (manual / contact only) ── */}
-          {accountType !== "folio" && (
-            <div className="space-y-1">
-              <label className="text-xs font-medium">Paymaster address</label>
-              <input
-                className="w-full rounded-md border bg-background text-foreground px-2 py-1 text-sm"
-                placeholder="0x paymaster address"
-                value={manualPaymaster}
-                disabled={submitting}
-                onChange={(e) => setManualPaymaster(e.target.value)}
-              />
-            </div>
-          )}
 
           {/* ── Recoverable address ── */}
           <div className="space-y-1">
@@ -1198,13 +1168,10 @@ function EditRecoveryModal({
     }
 
     const recov = recovery.recoverableAddress as `0x${string}`;
-    const pmAddr = folio.paymaster as `0x${string}`;
 
     if (confirm.type === "threshold") {
-      const innerData = encodeFunctionData({ abi: paymasterAbi, functionName: "updateThreshold",
-        args: [BigInt(confirm.value), recov] }) as Hex;
-      const encoded = encodeFunctionData({ abi: quantumAccountAbi, functionName: "execute",
-        args: [pmAddr, 0n, innerData] }) as Hex;
+      const encoded = encodeFunctionData({ abi: quantumAccountAbi, functionName: "updateRecoverableThreshold",
+        args: [recov, BigInt(confirm.value)] }) as Hex;
       await doUpdate({ threshold: confirm.value }, encoded, () => setThreshold(confirm.value));
 
     } else if (confirm.type === "status") {
@@ -1216,19 +1183,15 @@ function EditRecoveryModal({
     } else if (confirm.type === "removeParticipant") {
       const next = participants.filter(p => p !== confirm.address);
       const nextThreshold = Math.min(threshold, Math.max(1, next.length));
-      const innerData = encodeFunctionData({ abi: paymasterAbi, functionName: "removeAddressFromRecoverable",
+      const encoded = encodeFunctionData({ abi: quantumAccountAbi, functionName: "removeAddressFromRecoverable",
         args: [recov, confirm.address as `0x${string}`] }) as Hex;
-      const encoded = encodeFunctionData({ abi: quantumAccountAbi, functionName: "execute",
-        args: [pmAddr, 0n, innerData] }) as Hex;
       await doUpdate({ participants: next, threshold: nextThreshold }, encoded,
         () => { setParticipants(next); setThreshold(nextThreshold); });
 
     } else if (confirm.type === "addParticipant") {
       const next = [...participants, confirm.address];
-      const innerData = encodeFunctionData({ abi: paymasterAbi, functionName: "addAddressToRecoverable",
+      const encoded = encodeFunctionData({ abi: quantumAccountAbi, functionName: "addAddressToRecoverable",
         args: [recov, confirm.address as `0x${string}`] }) as Hex;
-      const encoded = encodeFunctionData({ abi: quantumAccountAbi, functionName: "execute",
-        args: [pmAddr, 0n, innerData] }) as Hex;
       await doUpdate({ participants: next }, encoded,
         () => { setParticipants(next); clearAddRow(); });
     }
@@ -2305,15 +2268,10 @@ function InitiateRecoveryModal({
     setResetPhase("resetting");
     setResetError(null);
     try {
-      const innerData = encodeFunctionData({
-        abi: paymasterAbi,
-        functionName: "reinitializeRecoverable",
-        args: [recoverableResolved as Address],
-      }) as Hex;
       const encoded = encodeFunctionData({
         abi: quantumAccountAbi,
-        functionName: "execute",
-        args: [paymaster.trim() as Address, 0n, innerData],
+        functionName: "reinitializeRecoverable",
+        args: [recoverableResolved as Address],
       }) as Hex;
       const tempFolio: Folio = {
         id: crypto.randomUUID(),
@@ -2647,15 +2605,10 @@ function ResetRecoverableModal({
     setPhase("resetting");
     setTxError(null);
     try {
-      const innerData = encodeFunctionData({
-        abi: paymasterAbi,
-        functionName: "reinitializeRecoverable",
-        args: [recovery.recoverableAddress as Address],
-      }) as Hex;
       const encoded = encodeFunctionData({
         abi: quantumAccountAbi,
-        functionName: "execute",
-        args: [recovery.paymaster as Address, 0n, innerData],
+        functionName: "reinitializeRecoverable",
+        args: [recovery.recoverableAddress as Address],
       }) as Hex;
       const { startFlow } = useTx.getState();
       await startFlow({ folio, encoded, domain, nonceKey: ADMIN_KEY });
@@ -3138,7 +3091,7 @@ function FetchRecoverableModal({
   recoveries: Recovery[];
   updateRecovery: (id: string, patch: Partial<Recovery>) => Promise<unknown>;
   addRecovery: (input: {
-    name: string; paymaster: string | null; recoverableAddress: string | null;
+    name: string; recoverableAddress: string | null;
     participants: string[] | null; threshold: number | null; chainId: number | null; status: boolean | null;
   }) => Promise<unknown>;
   onClose: () => void;
@@ -3252,7 +3205,6 @@ function FetchRecoverableModal({
         // 3. Create a new minimal record
         await addRecovery({
           name: accountAddress,
-          paymaster: target.kind === "folio" ? target.folio.paymaster : "",
           recoverableAddress: entry.recoverableAddress,
           participants: [],
           threshold: 0,

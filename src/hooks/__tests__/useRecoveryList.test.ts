@@ -26,7 +26,6 @@ const ALPHA = {
   participants: ["0xA", "0xB"],
   createdAt: 300,
   updatedAt: 300,
-  paymaster: "0xPay1",
   recoverableAddress: "0xRec1",
 };
 
@@ -40,7 +39,6 @@ const BETA = {
   participants: ["0xC"],
   createdAt: 100,
   updatedAt: 100,
-  paymaster: "0xPay2",
   recoverableAddress: "0xRec2",
 };
 
@@ -54,7 +52,6 @@ const GAMMA = {
   participants: ["0xD", "0xE", "0xF"],
   createdAt: 200,
   updatedAt: 200,
-  paymaster: "0xPay3",
   recoverableAddress: "0xRec3",
 };
 
@@ -68,7 +65,6 @@ const DELTA = {
   participants: ["0xG"],
   createdAt: 50,
   updatedAt: 50,
-  paymaster: "0xPay4",
   recoverableAddress: "0xRec4",
 };
 

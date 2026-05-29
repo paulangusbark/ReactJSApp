@@ -24,7 +24,6 @@ import {
 
 const BASE_RECOVERY = {
   name: "0xDeadBeefDeadBeefDeadBeefDeadBeefDeadBeef",
-  paymaster: "0xPaymasterAddress000000000000000000000001",
   recoverableAddress: null, // address not known until on-chain deployment
   participants: ["0xParticipant00000000000000000000000001"],
   threshold: 1,
@@ -83,7 +82,6 @@ describe("addRecovery", () => {
   it("defaults null fields to sensible values", async () => {
     const result = await addRecovery({
       name: "0xAbc",
-      paymaster: null,
       recoverableAddress: null,
       participants: null,
       threshold: null,
@@ -91,7 +89,6 @@ describe("addRecovery", () => {
       status: null,
     });
 
-    expect(result[0].paymaster).toBe("");
     expect(result[0].recoverableAddress).toBe("");
     expect(result[0].participants).toEqual([]);
     expect(result[0].threshold).toBe(1);
@@ -151,7 +148,7 @@ describe("updateRecovery", () => {
     expect(all.find(r => r.name === BASE_RECOVERY.name)!.threshold).toBe(1);
   });
 
-  it("does not overwrite immutable fields (name, chainId, paymaster, recoverableAddress)", async () => {
+  it("does not overwrite immutable fields (name, chainId, recoverableAddress)", async () => {
     const added = await addRecovery(BASE_RECOVERY);
     const id = added[0].id;
 
@@ -160,7 +157,6 @@ describe("updateRecovery", () => {
     const updated = (await getAllRecoveries()).find(r => r.id === id)!;
     expect(updated.name).toBe(BASE_RECOVERY.name);
     expect(updated.chainId).toBe(11155111);
-    expect(updated.paymaster).toBe(BASE_RECOVERY.paymaster);
     expect(updated.recoverableAddress).toBe(""); // null input → empty string
   });
 
@@ -180,11 +176,10 @@ describe("updateRecovery", () => {
 
 describe("consumed field — legacy record migration", () => {
   it("defaults consumed to false for records loaded from disk that lack the field", async () => {
-    // Simulate a legacy v1 record stored on disk without the consumed field
+    // Simulate a v2 record stored without the consumed field
     const legacyRecord = {
       id: "recovery:legacy-001",
       name: "0xLegacyAddress000000000000000000000001",
-      paymaster: "0xPaymaster0000000000000000000000000001",
       recoverableAddress: "0xRecoverable00000000000000000000000001",
       participants: [],
       threshold: 1,
@@ -192,14 +187,43 @@ describe("consumed field — legacy record migration", () => {
       status: true,
       createdAt: 1000,
       updatedAt: 1000,
-      // no `consumed` field — as it would be on disk before this change
+      // no `consumed` field
     };
     const { set: idbSet } = await import("idb-keyval");
+    // Write directly at current schema version (2) to bypass migration
+    (idbSet as any)("cointrol:recovery:schemaVersion", 2);
     (idbSet as any)("cointrol:recovery:v1:test-uid", [legacyRecord]);
 
     const all = await getAllRecoveries();
     expect(all).toHaveLength(1);
     expect(all[0].consumed).toBe(false);
+  });
+});
+
+describe("v1→v2 migration — strips paymaster field", () => {
+  it("removes paymaster from records when upgrading from schema v1", async () => {
+    const v1Record = {
+      id: "recovery:v1-001",
+      name: "0xV1Address0000000000000000000000000001",
+      paymaster: "0xOldPaymaster000000000000000000000001",
+      recoverableAddress: "0xRecoverable00000000000000000000000001",
+      participants: [],
+      threshold: 1,
+      chainId: 11155111,
+      status: true,
+      consumed: false,
+      createdAt: 1000,
+      updatedAt: 1000,
+    };
+    const { set: idbSet } = await import("idb-keyval");
+    // Simulate schema version 1 on disk
+    (idbSet as any)("cointrol:recovery:schemaVersion", 1);
+    (idbSet as any)("cointrol:recovery:v1:test-uid", [v1Record]);
+
+    const all = await getAllRecoveries();
+    expect(all).toHaveLength(1);
+    expect(all[0].id).toBe("recovery:v1-001");
+    expect((all[0] as any).paymaster).toBeUndefined();
   });
 });
 

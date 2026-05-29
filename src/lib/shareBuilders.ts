@@ -147,7 +147,7 @@ export function buildRecoveryShare(recovery: Recovery): SharePayload {
       name: recovery.name,
       chainId: recovery.chainId,
       recoverableAddress: recovery.recoverableAddress,
-      paymaster: recovery.paymaster,
+      paymaster: recovery.paymaster ?? "",
       threshold: recovery.threshold,
       status: recovery.status,
       participants: recovery.participants,

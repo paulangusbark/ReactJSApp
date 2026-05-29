@@ -5,14 +5,14 @@ import { getCurrentUser } from "./currentUser";
 
 function recoveryKey() { return `cointrol:recovery:v1:${getCurrentUser()}`; }
 const RECOVERY_SCHEMA_VERSION_KEY = "cointrol:recovery:schemaVersion";
-const CURRENT_RECOVERY_SCHEMA_VERSION = 1;
+const CURRENT_RECOVERY_SCHEMA_VERSION = 2;
 
 // Recovery schema v1
 export type Recovery = {
   id: string;  // unique identifier
   name: string;  // account name (folio name)
   chainId: number;  // chain id (must match chain id of folio name)
-  paymaster: string;  // paymaster address where recoverable is registered
+  paymaster?: string;  // deprecated — no longer used for management calls
   recoverableAddress: string;  // address of recoverable
   threshold: number;  // number of recovery addresses required to recover
   status: boolean;  // recoverable status on chain
@@ -69,21 +69,13 @@ async function ensureRecoverySchemaMigrated(): Promise<void> {
   let recovery = await get<Recovery[] | undefined>(recoveryKey());
   if (!recovery) recovery = [];
 
-  // Example future migration (v1 → v2):
-  //
-  // if (storedVersion < 2) {
-  //   const migrated = contacts.map(c => ({
-  //     ...c,
-  //     tags: [], // new field with default
-  //   }));
-  //   await set(contactsKey(), migrated);
-  //   await setContactsSchemaVersion(2);
-  // }
-  //
-  // For now we just bump the version if needed.
-
-  if (storedVersion < CURRENT_RECOVERY_SCHEMA_VERSION) {
-    await setRecoverySchemaVersion(CURRENT_RECOVERY_SCHEMA_VERSION);
+  if (storedVersion < 2) {
+    const migrated = recovery.map((r: any) => {
+      const { paymaster, ...rest } = r;
+      return rest as Recovery;
+    });
+    await set(recoveryKey(), migrated);
+    await setRecoverySchemaVersion(2);
   }
 }
 
@@ -109,7 +101,7 @@ export async function getAllRecoveries(): Promise<Recovery[]> {
 
 export async function addRecovery(input: {
   name: string;
-  paymaster: string | null;
+  paymaster?: string | null;
   recoverableAddress: string | null;
   participants: string[]|null;
   threshold: number | null;
@@ -122,7 +114,6 @@ export async function addRecovery(input: {
   const newRecovery: Recovery = {
     id: `recovery:${crypto.randomUUID?.() ?? `${now}:${recoveries.length}`}`,
     name: input.name,
-    paymaster: input.paymaster ?? "",
     recoverableAddress: input.recoverableAddress ?? "",
     participants: input.participants ?? [],
     threshold: input.threshold ?? 1,

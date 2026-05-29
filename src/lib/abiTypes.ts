@@ -18,7 +18,6 @@ export const quantumAccountAbi: Abi = [
     name: "createRecoverable",
     stateMutability: "nonpayable",
     inputs: [
-      { name: "_paymaster", type: "address" },
       { name: "_threshold", type: "uint256" },
       { name: "_recoverers", type: "address[]" },
     ],
@@ -69,9 +68,6 @@ export const quantumAccountAbi: Abi = [
     ],
     outputs: [],
   },
-];
-
-export const paymasterAbi: Abi = [
   {
     type: "function",
     name: "addAddressToRecoverable",
@@ -94,11 +90,11 @@ export const paymasterAbi: Abi = [
   },
   {
     type: "function",
-    name: "updateThreshold",
+    name: "updateRecoverableThreshold",
     stateMutability: "nonpayable",
     inputs: [
-      { name: "_newThreshold", type: "uint256" },
       { name: "_recoverable", type: "address" },
+      { name: "_threshold", type: "uint256" },
     ],
     outputs: [],
   },
@@ -110,6 +106,8 @@ export const paymasterAbi: Abi = [
     outputs: [],
   },
 ];
+
+export const paymasterAbi: Abi = [];
 
 export const recoverableAbi: Abi = [
   {

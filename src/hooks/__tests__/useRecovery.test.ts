@@ -37,7 +37,6 @@ const RECOVERY_A = {
   id: "recovery:1",
   name: "0xFolioAddress0000000000000000000000001",
   chainId: 11155111,
-  paymaster: "0xPaymaster00000000000000000000000000001",
   recoverableAddress: "0xRecoverable0000000000000000000000001",
   threshold: 1,
   status: true,

@@ -1079,7 +1079,7 @@ export function Folios() {
       )}
 
       {/* ── Similar name warning modal ── */}
-      {similarNameWarning && (
+      {similarNameWarning && createPortal(
         <div
           style={{
             position: "fixed",
@@ -1129,7 +1129,8 @@ export function Folios() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
