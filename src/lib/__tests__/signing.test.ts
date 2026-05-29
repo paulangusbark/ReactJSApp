@@ -55,7 +55,7 @@ vi.mock("@/lib/submitTransaction", async (importOriginal) => {
   return {
     ...mod,
     PaymasterAPI: {
-      createNewAccount: vi.fn().mockResolvedValue({ success: true, result: "ok" }),
+      createNewAccount: vi.fn().mockResolvedValue({ success: true, result: "ok", paymaster: "0xpaymaster" }),
       estimateGas: vi.fn().mockResolvedValue({ result: null }),
       submit: vi.fn().mockResolvedValue({ success: true }),
       getTxReceipt: vi.fn().mockResolvedValue({ success: false }),
@@ -107,7 +107,7 @@ describe("wallets.ts — createQuantumAccount signing lifecycle", () => {
     mockSign.mockResolvedValue(new Uint8Array([0xaa, 0xbb, 0xcc]));
     // Restore the default success implementation after any test that overrides it
     const { PaymasterAPI } = await import("@/lib/submitTransaction");
-    vi.mocked(PaymasterAPI.createNewAccount).mockResolvedValue({ success: true, result: "ok" });
+    vi.mocked(PaymasterAPI.createNewAccount).mockResolvedValue({ success: true, result: "ok", paymaster: "0xpaymaster" });
     // Restore worker factory return value
     mockCreateWorker.mockReturnValue({
       sign: mockSign,
@@ -164,18 +164,18 @@ describe("wallets.ts — createQuantumAccount signing lifecycle", () => {
     expect(mockTerminate).toHaveBeenCalledOnce();
   });
 
-  it("returns true when PaymasterAPI reports success", async () => {
+  it("returns { success: true, paymaster } when PaymasterAPI reports success", async () => {
     const { createQuantumAccount } = await import("../wallets");
     const result = await createQuantumAccount({ sender: VALID_SENDER as any, domain: MOCK_DOMAIN as any, salt: "0xdeadbeef" as any, keypairId: "key-1" });
-    expect(result).toBe(true);
+    expect(result).toEqual({ success: true, paymaster: "0xpaymaster" });
   });
 
-  it("returns false when PaymasterAPI reports failure", async () => {
+  it("returns { success: false, paymaster: '' } when PaymasterAPI reports failure", async () => {
     const { PaymasterAPI } = await import("@/lib/submitTransaction");
-    vi.mocked(PaymasterAPI.createNewAccount).mockResolvedValueOnce({ success: false, result: "rejected" });
+    vi.mocked(PaymasterAPI.createNewAccount).mockResolvedValueOnce({ success: false, result: "rejected", paymaster: "" });
     const { createQuantumAccount } = await import("../wallets");
     const result = await createQuantumAccount({ sender: VALID_SENDER as any, domain: MOCK_DOMAIN as any, salt: "0xdeadbeef" as any, keypairId: "key-1" });
-    expect(result).toBe(false);
+    expect(result).toEqual({ success: false, paymaster: "" });
   });
 
   it("creates a fresh worker client on each call", async () => {

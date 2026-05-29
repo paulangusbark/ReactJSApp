@@ -38,6 +38,7 @@ export interface SubmitRequest { userOp: PackedUserOperation; domain: string }
 export interface SubmitResponse { success: boolean; signed_tx: `0x${string}`; result: string }
 export interface UpdatePublicKey { sender: `0x${string}`; domain: string; oldKey: `0x${string}`; newKey: `0x${string}`; signature: `0x${string}` }
 export interface GenericResponse { success: boolean; result: string }
+export interface CreateFreeAccountResponse { success: boolean; result: string; paymaster: string }
 export interface TxHashRequest { sender: `0x${string}`; userOpHash: `0x${string}` }
 export interface TxReceipt { success: boolean; txHash: `0x${string}` }
 export interface BundlerFalconDomain { factory: string; falcon: string; falconLevel: string; initCodeHash: string }
@@ -163,8 +164,8 @@ export const BundlerAPI = {
 };
 
 export const PaymasterAPI = {
-  async createNewAccount(sender: Address, domain: string, publicKey: string, salt: string, signature: string): Promise<GenericResponse> {
-    return j<GenericResponse>(`${PAYMASTER}/createfree`, { method: "POST", body: JSON.stringify({ sender, domain, publicKey, salt, signature }) });
+  async createNewAccount(sender: Address, domain: string, publicKey: string, salt: string, signature: string): Promise<CreateFreeAccountResponse> {
+    return j<CreateFreeAccountResponse>(`${PAYMASTER}/createfree`, { method: "POST", body: JSON.stringify({ sender, domain, publicKey, salt, signature }) });
   },
 };
 

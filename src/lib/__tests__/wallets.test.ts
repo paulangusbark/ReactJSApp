@@ -28,7 +28,7 @@ vi.mock("@/lib/submitTransaction", async (importOriginal) => {
   return {
     ...mod,
     PaymasterAPI: {
-      createNewAccount: vi.fn().mockResolvedValue({ success: true, result: "ok" }),
+      createNewAccount: vi.fn().mockResolvedValue({ success: true, result: "ok", paymaster: "0xpaymaster" }),
     },
   };
 });
@@ -136,7 +136,18 @@ describe("createQuantumAccount", () => {
     const result = await createQuantumAccount({ sender: SENDER, domain: DOMAIN_512 as any, salt: SALT, keypairId: "key-1" });
 
     expect(PaymasterAPI.createNewAccount).toHaveBeenCalledOnce();
-    expect(result).toBe(true);
+    expect(result).toEqual({ success: true, paymaster: "0xpaymaster" });
+  });
+
+  it("returns { success: false, paymaster: '' } when API reports failure", async () => {
+    vi.mocked(listKeypairs).mockResolvedValue([{ id: "key-1", level: 512, createdAt: 0 }]);
+    vi.mocked(getPublicKey).mockResolvedValue(new Uint8Array([0x01, 0x02]));
+    vi.mocked(getSecretKey).mockResolvedValue(new Uint8Array([0x05, 0x06]));
+    vi.mocked(PaymasterAPI.createNewAccount).mockResolvedValueOnce({ success: false, result: "account already exists", paymaster: "" });
+
+    const result = await createQuantumAccount({ sender: SENDER, domain: DOMAIN_512 as any, salt: SALT, keypairId: "key-1" });
+
+    expect(result).toEqual({ success: false, paymaster: "" });
   });
 
   it("throws when keypair is not found", async () => {

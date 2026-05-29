@@ -558,7 +558,7 @@ export function Folios() {
       keypairId,
     });
 
-    if (!ok) {
+    if (!ok.success) {
       setSubmitState({ status: "error", message: "Account creation failed." });
       return;
     }
@@ -572,7 +572,7 @@ export function Folios() {
       name: trimmedName,
       address: sender,
       chainId: selectDomain.chainId,
-      paymaster: selectDomain.paymaster?.[0]?.address ?? "",
+      paymaster: ok.paymaster,
       type: 0,
       bundler: selectDomain.bundler,
       keypairId,

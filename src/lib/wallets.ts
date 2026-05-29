@@ -25,7 +25,7 @@ export async function createQuantumAccount({
   domain: Domain;
   salt: Hex;
   keypairId: string;
-}): Promise<boolean> {
+}): Promise<{ success: boolean; paymaster: string }> {
   const keypairs = await listKeypairs();
   const meta = keypairs.find(k => k.id === keypairId);
   if (!meta) throw new Error(`Keypair ${keypairId} not found`);
@@ -56,7 +56,7 @@ export async function createQuantumAccount({
     bytesToHex(signature),
   );
 
-  return !!res.success;
+  return { success: res.success, paymaster: res.paymaster };
 }
 
 export async function notifyBundlerPublicKeyUpdate({
