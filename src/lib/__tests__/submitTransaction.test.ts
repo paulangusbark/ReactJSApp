@@ -7,7 +7,7 @@
  *  3. useTx store                      — state transitions with mocked viem & Falcon.
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // ---------------------------------------------------------------------------
 // vi.hoisted — variables referenced inside vi.mock factories must come from here
@@ -437,5 +437,69 @@ describe("useTx store", () => {
     const packed = BigInt(submittedOp.accountGasLimits);
     const verificationGas = packed >> 128n;
     expect(verificationGas).toBe(15_000_000n);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 5. BundlerAPI.getAccountPaymaster
+// ---------------------------------------------------------------------------
+
+describe("BundlerAPI.getAccountPaymaster", () => {
+  const ACCOUNT = "0x1234567890123456789012345678901234567890" as `0x${string}`;
+  const DOMAIN = "Sepolia";
+  const PAYMASTER_ADDR = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+  const mockFetch = vi.fn();
+
+  beforeEach(() => { mockFetch.mockClear(); vi.stubGlobal("fetch", mockFetch); });
+  afterEach(() => { vi.unstubAllGlobals(); });
+
+  function okJson(body: unknown) {
+    return Promise.resolve({ ok: true, json: () => Promise.resolve(body) });
+  }
+  function errResponse(status: number, statusText: string) {
+    return Promise.resolve({ ok: false, status, statusText, json: () => Promise.resolve(null) });
+  }
+
+  it("calls GET .../account/<addr>/paymaster/<domain> with no request body", async () => {
+    mockFetch.mockReturnValue(okJson({ success: true, paymaster: PAYMASTER_ADDR }));
+
+    await BundlerAPI.getAccountPaymaster(ACCOUNT, DOMAIN);
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toContain(`/account/${ACCOUNT}/paymaster/${DOMAIN}`);
+    expect(init?.body).toBeUndefined();
+    expect(init?.method).toBeUndefined();
+  });
+
+  it("returns success:true and paymaster address on a 200 response", async () => {
+    mockFetch.mockReturnValue(okJson({ success: true, paymaster: PAYMASTER_ADDR }));
+
+    const result = await BundlerAPI.getAccountPaymaster(ACCOUNT, DOMAIN);
+
+    expect(result.success).toBe(true);
+    expect(result.paymaster).toBe(PAYMASTER_ADDR);
+  });
+
+  it("throws when server responds 404", async () => {
+    mockFetch.mockReturnValue(errResponse(404, "Not Found"));
+
+    await expect(BundlerAPI.getAccountPaymaster(ACCOUNT, DOMAIN)).rejects.toThrow("404");
+  });
+
+  it("throws when server responds 500", async () => {
+    mockFetch.mockReturnValue(errResponse(500, "Internal Server Error"));
+
+    await expect(BundlerAPI.getAccountPaymaster(ACCOUNT, DOMAIN)).rejects.toThrow("500");
+  });
+
+  it("preserves the account address casing in the URL", async () => {
+    const mixedCase = "0xAbCdEf1234567890AbCdEf1234567890AbCdEf12" as `0x${string}`;
+    mockFetch.mockReturnValue(okJson({ success: true, paymaster: PAYMASTER_ADDR }));
+
+    await BundlerAPI.getAccountPaymaster(mixedCase, DOMAIN);
+
+    const [url] = mockFetch.mock.calls[0];
+    expect(url).toContain(`/account/${mixedCase}/paymaster/${DOMAIN}`);
   });
 });

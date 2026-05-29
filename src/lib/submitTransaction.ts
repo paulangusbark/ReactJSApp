@@ -51,6 +51,7 @@ export interface BundlerDomain {
 }
 export interface GetAllDomainsResponse { success: boolean; data: BundlerDomain[] }
 export interface DomainDetailsResponse { success: boolean; data: BundlerDomain }
+export interface AccountPaymasterResponse { success: boolean; paymaster: string }
 export interface PaymasterRequest { paymaster: `0x${string}`; domain: string; sender: `0x${string}`; flag: number; signature: `0x${string}` }
 export interface CreateFreeAccountRequest { sender: `0x${string}`; domain: string; publicKey: `0x${string}`; salt: `0x${string}`; signature: `0x${string}` }
 
@@ -160,6 +161,9 @@ export const BundlerAPI = {
   },
   async updatePaymaster(paymaster: Address, domain: string, sender: Address, flag: number, signature: `0x${string}`): Promise<GenericResponse> {
     return j<GenericResponse>(`${BUNDLER}/paymaster/update`, { method: "POST", body: JSON.stringify({ paymaster, domain, sender, flag, signature }) });
+  },
+  async getAccountPaymaster(account: Address, domain: string): Promise<AccountPaymasterResponse> {
+    return j<AccountPaymasterResponse>(`${BUNDLER}/account/${account}/paymaster/${domain}`);
   },
 };
 

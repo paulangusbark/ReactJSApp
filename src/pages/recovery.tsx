@@ -2144,6 +2144,24 @@ function InitiateRecoveryModal({
     [contacts, domain]
   );
 
+  // Auto-fill paymaster from the bundler whenever account + domain are both known
+  React.useEffect(() => {
+    if (!domain) return;
+    let accountAddr: string | null = null;
+    if (accountMode === "manual") {
+      accountAddr = accountResolved;
+    } else if (accountMode === "contact" && selectedContactKey) {
+      const lastColon = selectedContactKey.lastIndexOf(":");
+      const cId = selectedContactKey.slice(0, lastColon);
+      const wIdxStr = selectedContactKey.slice(lastColon + 1);
+      accountAddr = contacts.find(c => c.id === cId)?.wallets?.[Number(wIdxStr)]?.address ?? null;
+    }
+    if (!accountAddr) return;
+    BundlerAPI.getAccountPaymaster(accountAddr as Address, domain.name)
+      .then(res => { if (res.success) setPaymaster(res.paymaster); })
+      .catch(() => { /* keep existing domain-default paymaster on any failure */ });
+  }, [accountResolved, selectedContactKey, domain, accountMode]);
+
   const filteredKeypairs = keypairs.filter(k => k.level === falconLevel);
 
   function applyAttestation(id: string) {
