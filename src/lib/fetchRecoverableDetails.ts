@@ -1,9 +1,11 @@
 import { createPublicClient, http } from "viem";
-import { quantumAccountAbi } from "./abiTypes";
+import { quantumAccountAbi, recoverableAbi } from "./abiTypes";
 
 export type RecoverableOnChainEntry = {
   recoverableAddress: `0x${string}`;
   isActive: boolean;
+  threshold: number;
+  participants: `0x${string}`[];
 };
 
 export async function fetchRecoverableDetails(opts: {
@@ -39,7 +41,27 @@ export async function fetchRecoverableDetails(opts: {
     } catch {
       isActive = false;
     }
-    results.push({ recoverableAddress: addr, isActive });
+
+    let threshold = 0;
+    try {
+      const raw = await publicClient.readContract({
+        address: addr,
+        abi: recoverableAbi,
+        functionName: "getThreshold",
+      }) as bigint;
+      threshold = Number(raw);
+    } catch { /* old contract without getter */ }
+
+    let participants: `0x${string}`[] = [];
+    try {
+      participants = await publicClient.readContract({
+        address: addr,
+        abi: recoverableAbi,
+        functionName: "getListOfAddresses",
+      }) as `0x${string}`[];
+    } catch { /* old contract without getter */ }
+
+    results.push({ recoverableAddress: addr, isActive, threshold, participants });
   }
 
   return results;

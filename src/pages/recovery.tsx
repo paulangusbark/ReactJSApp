@@ -3096,6 +3096,8 @@ type FetchRecoverableTarget =
 type SyncResult = {
   address: string;
   isActive: boolean;
+  threshold: number;
+  participantCount: number;
   action: "updated" | "addressPatched" | "created";
 };
 
@@ -3204,8 +3206,10 @@ function FetchRecoverableModal({
           await updateRecovery(matched.id, {
             status: entry.isActive,
             consumed: entry.isActive ? false : matched.consumed,
+            threshold: entry.threshold,
+            participants: entry.participants,
           });
-          synced.push({ address: entry.recoverableAddress, isActive: entry.isActive, action: "updated" });
+          synced.push({ address: entry.recoverableAddress, isActive: entry.isActive, threshold: entry.threshold, participantCount: entry.participants.length, action: "updated" });
           continue;
         }
 
@@ -3220,8 +3224,10 @@ function FetchRecoverableModal({
             recoverableAddress: entry.recoverableAddress,
             status: entry.isActive,
             consumed: entry.isActive ? false : unaddressed.consumed,
+            threshold: entry.threshold,
+            participants: entry.participants,
           });
-          synced.push({ address: entry.recoverableAddress, isActive: entry.isActive, action: "addressPatched" });
+          synced.push({ address: entry.recoverableAddress, isActive: entry.isActive, threshold: entry.threshold, participantCount: entry.participants.length, action: "addressPatched" });
           continue;
         }
 
@@ -3229,12 +3235,12 @@ function FetchRecoverableModal({
         await addRecovery({
           name: accountAddress,
           recoverableAddress: entry.recoverableAddress,
-          participants: [],
-          threshold: 0,
+          participants: entry.participants,
+          threshold: entry.threshold,
           chainId,
           status: entry.isActive,
         });
-        synced.push({ address: entry.recoverableAddress, isActive: entry.isActive, action: "created" });
+        synced.push({ address: entry.recoverableAddress, isActive: entry.isActive, threshold: entry.threshold, participantCount: entry.participants.length, action: "created" });
       }
 
       setResults(synced);
@@ -3318,10 +3324,15 @@ function FetchRecoverableModal({
                 {results.map(r => (
                   <div key={r.address} className="rounded-md border border-border px-3 py-2 text-xs font-mono">
                     <div className="truncate text-muted-foreground">{r.address}</div>
-                    <div className="mt-0.5 flex gap-2">
+                    <div className="mt-0.5 flex gap-2 flex-wrap">
                       <span className={r.isActive ? "text-green-600" : "text-gray-500"}>
                         {r.isActive ? "Enabled" : "Disabled"}
                       </span>
+                      {r.participantCount > 0 && (
+                        <span className="text-muted-foreground">
+                          {r.participantCount} guardian{r.participantCount !== 1 ? "s" : ""}, threshold {r.threshold}
+                        </span>
+                      )}
                       <span className="text-muted-foreground">— {actionLabel[r.action]}</span>
                     </div>
                   </div>
