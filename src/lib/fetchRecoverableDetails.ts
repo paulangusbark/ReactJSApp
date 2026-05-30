@@ -1,11 +1,11 @@
-import { createPublicClient, http } from "viem";
+import { createPublicClient, http, encodeFunctionData } from "viem";
 import { quantumAccountAbi, recoverableAbi } from "./abiTypes";
 
 export type RecoverableOnChainEntry = {
   recoverableAddress: `0x${string}`;
   isActive: boolean;
-  threshold: number;
-  participants: `0x${string}`[];
+  threshold: number | null;
+  participants: `0x${string}`[] | null;
 };
 
 export async function fetchRecoverableDetails(opts: {
@@ -30,11 +30,13 @@ export async function fetchRecoverableDetails(opts: {
   for (const addr of addresses) {
     let isActive = false;
     try {
-      await publicClient.simulateContract({
-        address: accountAddress,
-        abi: quantumAccountAbi,
-        functionName: "disableRecoverable",
-        args: [addr],
+      await publicClient.call({
+        to: accountAddress,
+        data: encodeFunctionData({
+          abi: quantumAccountAbi,
+          functionName: "disableRecoverable",
+          args: [addr],
+        }),
         account: entryPoint,
       });
       isActive = true;
@@ -42,7 +44,7 @@ export async function fetchRecoverableDetails(opts: {
       isActive = false;
     }
 
-    let threshold = 0;
+    let threshold: number | null = null;
     try {
       const raw = await publicClient.readContract({
         address: addr,
@@ -52,7 +54,7 @@ export async function fetchRecoverableDetails(opts: {
       threshold = Number(raw);
     } catch { /* old contract without getter */ }
 
-    let participants: `0x${string}`[] = [];
+    let participants: `0x${string}`[] | null = null;
     try {
       participants = await publicClient.readContract({
         address: addr,

@@ -3206,10 +3206,10 @@ function FetchRecoverableModal({
           await updateRecovery(matched.id, {
             status: entry.isActive,
             consumed: entry.isActive ? false : matched.consumed,
-            threshold: entry.threshold,
-            participants: entry.participants,
+            ...(entry.threshold    !== null && { threshold:    entry.threshold }),
+            ...(entry.participants !== null && { participants: entry.participants }),
           });
-          synced.push({ address: entry.recoverableAddress, isActive: entry.isActive, threshold: entry.threshold, participantCount: entry.participants.length, action: "updated" });
+          synced.push({ address: entry.recoverableAddress, isActive: entry.isActive, threshold: entry.threshold ?? matched.threshold, participantCount: (entry.participants ?? matched.participants).length, action: "updated" });
           continue;
         }
 
@@ -3224,10 +3224,10 @@ function FetchRecoverableModal({
             recoverableAddress: entry.recoverableAddress,
             status: entry.isActive,
             consumed: entry.isActive ? false : unaddressed.consumed,
-            threshold: entry.threshold,
-            participants: entry.participants,
+            ...(entry.threshold    !== null && { threshold:    entry.threshold }),
+            ...(entry.participants !== null && { participants: entry.participants }),
           });
-          synced.push({ address: entry.recoverableAddress, isActive: entry.isActive, threshold: entry.threshold, participantCount: entry.participants.length, action: "addressPatched" });
+          synced.push({ address: entry.recoverableAddress, isActive: entry.isActive, threshold: entry.threshold ?? unaddressed.threshold, participantCount: (entry.participants ?? unaddressed.participants).length, action: "addressPatched" });
           continue;
         }
 
@@ -3235,12 +3235,12 @@ function FetchRecoverableModal({
         await addRecovery({
           name: accountAddress,
           recoverableAddress: entry.recoverableAddress,
-          participants: entry.participants,
-          threshold: entry.threshold,
+          participants: entry.participants ?? [],
+          threshold: entry.threshold ?? 1,
           chainId,
           status: entry.isActive,
         });
-        synced.push({ address: entry.recoverableAddress, isActive: entry.isActive, threshold: entry.threshold, participantCount: entry.participants.length, action: "created" });
+        synced.push({ address: entry.recoverableAddress, isActive: entry.isActive, threshold: entry.threshold ?? 1, participantCount: (entry.participants ?? []).length, action: "created" });
       }
 
       setResults(synced);

@@ -2,11 +2,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // ---------------------------------------------------------------------------
-// Mock viem — intercept createPublicClient so we control readContract / simulateContract
+// Mock viem — intercept createPublicClient so we control readContract / call
 // ---------------------------------------------------------------------------
 
 const mockReadContract = vi.fn();
-const mockSimulateContract = vi.fn();
+const mockCall = vi.fn();
 
 vi.mock("viem", async (importOriginal) => {
   const actual = await importOriginal<typeof import("viem")>();
@@ -14,8 +14,9 @@ vi.mock("viem", async (importOriginal) => {
     ...actual,
     createPublicClient: vi.fn(() => ({
       readContract: mockReadContract,
-      simulateContract: mockSimulateContract,
+      call: mockCall,
     })),
+    encodeFunctionData: vi.fn(() => "0x"),
   };
 });
 
@@ -48,28 +49,28 @@ describe("fetchRecoverableDetails", () => {
     mockReadContract.mockResolvedValue([]);
     const result = await fetchRecoverableDetails(OPTS);
     expect(result).toEqual([]);
-    expect(mockSimulateContract).not.toHaveBeenCalled();
+    expect(mockCall).not.toHaveBeenCalled();
   });
 
-  it("returns isActive true when disableRecoverable simulation succeeds", async () => {
+  it("returns isActive true when disableRecoverable call succeeds", async () => {
     makeReadMock([REC_A]);
-    mockSimulateContract.mockResolvedValue({ result: true });
+    mockCall.mockResolvedValue({});
     const result = await fetchRecoverableDetails(OPTS);
     expect(result).toHaveLength(1);
     expect(result[0].recoverableAddress).toBe(REC_A);
     expect(result[0].isActive).toBe(true);
   });
 
-  it("returns isActive false when disableRecoverable simulation throws (already disabled)", async () => {
+  it("returns isActive false when disableRecoverable call throws (already disabled)", async () => {
     makeReadMock([REC_A]);
-    mockSimulateContract.mockRejectedValue(new Error("Recoverable already disabled"));
+    mockCall.mockRejectedValue(new Error("Recoverable already disabled"));
     const result = await fetchRecoverableDetails(OPTS);
     expect(result[0].isActive).toBe(false);
   });
 
   it("returns threshold and participants from recoverable contract getters", async () => {
     makeReadMock([REC_A], 2n, [GUARDIAN_1, GUARDIAN_2]);
-    mockSimulateContract.mockResolvedValue({ result: true });
+    mockCall.mockResolvedValue({});
     const result = await fetchRecoverableDetails(OPTS);
     expect(result[0].threshold).toBe(2);
     expect(result[0].participants).toEqual([GUARDIAN_1, GUARDIAN_2]);
@@ -77,7 +78,7 @@ describe("fetchRecoverableDetails", () => {
 
   it("calls getThreshold and getListOfAddresses on the recoverable address (not account)", async () => {
     makeReadMock([REC_A]);
-    mockSimulateContract.mockResolvedValue({ result: true });
+    mockCall.mockResolvedValue({});
     await fetchRecoverableDetails(OPTS);
     const thresholdCall = mockReadContract.mock.calls.find(
       ([args]: [{ address: string; functionName: string }]) => args.functionName === "getThreshold"
@@ -89,10 +90,21 @@ describe("fetchRecoverableDetails", () => {
     expect(listCall?.[0].address).toBe(REC_A);
   });
 
+  it("proceeds to read threshold and participants after call resolves", async () => {
+    makeReadMock([REC_A]);
+    mockCall.mockResolvedValue({});
+    await fetchRecoverableDetails(OPTS);
+    const functionNames = mockReadContract.mock.calls.map(
+      ([args]: [{ functionName: string }]) => args.functionName
+    );
+    expect(functionNames).toContain("getThreshold");
+    expect(functionNames).toContain("getListOfAddresses");
+  });
+
   it("handles multiple recoverables with correct per-entry status", async () => {
     makeReadMock([REC_A, REC_B]);
-    mockSimulateContract
-      .mockResolvedValueOnce({ result: true })   // REC_A active
+    mockCall
+      .mockResolvedValueOnce({})                                           // REC_A active
       .mockRejectedValueOnce(new Error("Recoverable already disabled"));  // REC_B disabled
     const result = await fetchRecoverableDetails(OPTS);
     expect(result).toHaveLength(2);
@@ -102,54 +114,65 @@ describe("fetchRecoverableDetails", () => {
     expect(result[1].isActive).toBe(false);
   });
 
-  it("treats any simulation error as inactive", async () => {
+  it("treats any call error as inactive", async () => {
     makeReadMock([REC_A]);
-    mockSimulateContract.mockRejectedValue(new Error("some unexpected RPC error"));
+    mockCall.mockRejectedValue(new Error("some unexpected RPC error"));
     const result = await fetchRecoverableDetails(OPTS);
     expect(result[0].isActive).toBe(false);
   });
 
-  it("passes entryPoint as account to simulateContract", async () => {
+  it("passes entryPoint as account to publicClient.call", async () => {
     makeReadMock([REC_A]);
-    mockSimulateContract.mockResolvedValue({ result: true });
+    mockCall.mockResolvedValue({});
     await fetchRecoverableDetails(OPTS);
-    expect(mockSimulateContract).toHaveBeenCalledWith(
+    expect(mockCall).toHaveBeenCalledWith(
       expect.objectContaining({ account: ENTRY_POINT })
     );
   });
 
   it("works the same for keypairLevel 1024", async () => {
     makeReadMock([REC_A]);
-    mockSimulateContract.mockResolvedValue({ result: true });
+    mockCall.mockResolvedValue({});
     const result = await fetchRecoverableDetails({ ...OPTS, keypairLevel: 1024 });
     expect(result).toHaveLength(1);
     expect(result[0].isActive).toBe(true);
-    expect(mockSimulateContract).toHaveBeenCalledTimes(1);
+    expect(mockCall).toHaveBeenCalledTimes(1);
   });
 
-  it("falls back to threshold 0 if getThreshold throws (old contract)", async () => {
+  it("returns null threshold when getThreshold throws (old contract without getter)", async () => {
     mockReadContract.mockImplementation(({ functionName }: { functionName: string }) => {
       if (functionName === "getRecoverables") return Promise.resolve([REC_A]);
       if (functionName === "getThreshold") return Promise.reject(new Error("function not found"));
       if (functionName === "getListOfAddresses") return Promise.resolve([GUARDIAN_1]);
       return Promise.reject(new Error(`Unexpected: ${functionName}`));
     });
-    mockSimulateContract.mockResolvedValue({ result: true });
+    mockCall.mockResolvedValue({});
     const result = await fetchRecoverableDetails(OPTS);
-    expect(result[0].threshold).toBe(0);
+    expect(result[0].threshold).toBeNull();
     expect(result[0].participants).toEqual([GUARDIAN_1]);
   });
 
-  it("falls back to empty participants if getListOfAddresses throws (old contract)", async () => {
+  it("returns null participants when getListOfAddresses throws (old contract without getter)", async () => {
     mockReadContract.mockImplementation(({ functionName }: { functionName: string }) => {
       if (functionName === "getRecoverables") return Promise.resolve([REC_A]);
       if (functionName === "getThreshold") return Promise.resolve(1n);
       if (functionName === "getListOfAddresses") return Promise.reject(new Error("function not found"));
       return Promise.reject(new Error(`Unexpected: ${functionName}`));
     });
-    mockSimulateContract.mockResolvedValue({ result: true });
+    mockCall.mockResolvedValue({});
     const result = await fetchRecoverableDetails(OPTS);
     expect(result[0].threshold).toBe(1);
-    expect(result[0].participants).toEqual([]);
+    expect(result[0].participants).toBeNull();
+  });
+
+  it("returns null threshold and null participants when both getters throw", async () => {
+    mockReadContract.mockImplementation(({ functionName }: { functionName: string }) => {
+      if (functionName === "getRecoverables") return Promise.resolve([REC_A]);
+      return Promise.reject(new Error("function not found"));
+    });
+    mockCall.mockResolvedValue({});
+    const result = await fetchRecoverableDetails(OPTS);
+    expect(result[0].threshold).toBeNull();
+    expect(result[0].participants).toBeNull();
   });
 });
